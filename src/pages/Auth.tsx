@@ -1,0 +1,128 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Zap, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+
+const Auth = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    // TODO: connect to Supabase auth when Cloud is enabled
+    setTimeout(() => {
+      setLoading(false);
+      toast({
+        title: "Lovable Cloud necessário",
+        description: "Ative o Lovable Cloud para usar autenticação.",
+      });
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+      <div className="w-full max-w-md animate-fade-in">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
+              <Zap className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="text-2xl font-display font-bold text-foreground">CreativeAI</span>
+          </div>
+          <p className="text-muted-foreground">
+            {isLogin ? "Entre na sua conta" : "Crie sua conta gratuita"}
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="gradient-card rounded-2xl p-8 shadow-card border border-border">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm text-muted-foreground">Nome</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Seu nome"
+                  className="bg-background/50 border-border"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="bg-background/50 border-border"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm text-muted-foreground">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-background/50 border-border pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {isLogin && (
+              <button type="button" className="text-sm text-primary hover:underline">
+                Esqueceu a senha?
+              </button>
+            )}
+
+            <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
+              {loading ? "Carregando..." : isLogin ? "Entrar" : "Criar conta"}
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <span className="text-muted-foreground text-sm">
+              {isLogin ? "Não tem conta?" : "Já tem conta?"}{" "}
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-primary hover:underline font-medium"
+              >
+                {isLogin ? "Cadastre-se" : "Faça login"}
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;
