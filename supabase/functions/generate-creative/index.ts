@@ -90,6 +90,9 @@ function buildPrompt(data: {
         "usar as imagens de referência como elementos centrais da composição",
         "não adicionar texto renderizado na imagem; apenas compor o visual",
         "evitar poluição visual e manter acabamento profissional",
+        ...(data.color_palette && data.color_palette.length > 0
+          ? [`utilizar a seguinte paleta de cores como base do design: ${data.color_palette.join(", ")}`]
+          : []),
         data.visual_option.thematic_elements
           ? `incluir elementos visuais temáticos alinhados ao nicho: ${data.visual_option.thematic_elements}`
           : "incluir ícones ou elementos visuais que reforcem a identidade do nicho do produto",
