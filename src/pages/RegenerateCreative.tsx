@@ -209,7 +209,7 @@ const RegenerateCreative = () => {
         .from("creative_requests")
         .select("id")
         .eq("user_id", user.id)
-        .eq("productName", productName)
+        .eq("product_name", productName)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
