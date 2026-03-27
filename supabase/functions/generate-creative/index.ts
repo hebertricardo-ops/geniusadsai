@@ -29,6 +29,7 @@ function buildPrompt(data: {
     visual_hierarchy: string;
     layout_style: string;
     cta_highlight: string;
+    thematic_elements?: string;
   };
 }): string {
   const benefitsList = data.benefits
@@ -88,6 +89,9 @@ function buildPrompt(data: {
         "usar as imagens de referência como elementos centrais da composição",
         "não adicionar texto renderizado na imagem; apenas compor o visual",
         "evitar poluição visual e manter acabamento profissional",
+        data.visual_option.thematic_elements
+          ? `incluir elementos visuais temáticos alinhados ao nicho: ${data.visual_option.thematic_elements}`
+          : "incluir ícones ou elementos visuais que reforcem a identidade do nicho do produto",
       ],
     },
     null,
