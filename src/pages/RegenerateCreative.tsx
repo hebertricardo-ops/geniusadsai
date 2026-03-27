@@ -181,7 +181,7 @@ const RegenerateCreative = () => {
       const { data: creativeData, error: creativeError } = await supabase.functions.invoke("generate-creative", {
         body: {
           image_urls: imageUrls,
-          productName,
+          product_name: productName,
           promise,
           pains,
           benefits,
