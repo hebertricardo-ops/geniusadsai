@@ -36,15 +36,18 @@ interface CopyAngle {
 }
 
 const CreateCreative = () => {
+  const location = useLocation();
+  const prefill = (location.state as any)?.prefill;
+
   const [step, setStep] = useState(0);
   const [images, setImages] = useState<File[]>([]);
-  const [quantity, setQuantity] = useState(1);
-  const [productName, setProductName] = useState("");
-  const [promise, setPromise] = useState("");
-  const [pains, setPains] = useState("");
-  const [benefits, setBenefits] = useState("");
-  const [objections, setObjections] = useState("");
-  const [cta, setCta] = useState("");
+  const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
+  const [productName, setProductName] = useState(prefill?.product_name ?? "");
+  const [promise, setPromise] = useState(prefill?.promise ?? "");
+  const [pains, setPains] = useState(prefill?.pains ?? "");
+  const [benefits, setBenefits] = useState(prefill?.benefits ?? "");
+  const [objections, setObjections] = useState(prefill?.objections ?? "");
+  const [cta, setCta] = useState(prefill?.cta ?? "");
   const [loading, setLoading] = useState(false);
   const [generatedAngles, setGeneratedAngles] = useState<CopyAngle[] | null>(null);
   const [selectedAngle, setSelectedAngle] = useState<number | null>(null);
