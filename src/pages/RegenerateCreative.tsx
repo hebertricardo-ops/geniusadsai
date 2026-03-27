@@ -59,7 +59,7 @@ const RegenerateCreative = () => {
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
   const [generatingCreative, setGeneratingCreative] = useState(false);
-  const [productName, setProductName] = useState(prefill?.productName ?? "");
+  const [productName, setProductName] = useState(prefill?.product_name ?? "");
   const [promise, setPromise] = useState(prefill?.promise ?? "");
   const [pains, setPains] = useState(prefill?.pains ?? "");
   const [benefits, setBenefits] = useState(prefill?.benefits ?? "");
