@@ -3,15 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import CreditsBadge from "@/components/CreditsBadge";
-import { useCredits } from "@/hooks/useCredits";
-import { Zap, Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2 } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2 } from "lucide-react";
 
 const CreativeResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: credits } = useCredits();
+  
 
   const { data: creatives = [], isLoading } = useQuery({
     queryKey: ["creative-results", requestId],
@@ -54,23 +52,8 @@ const CreativeResults = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-hero">
-      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-lg text-foreground">CreativeAI</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <CreditsBadge credits={credits?.credits_balance ?? 0} />
-          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-            Dashboard
-          </Button>
-        </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto px-4 py-10">
+    <div>
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />

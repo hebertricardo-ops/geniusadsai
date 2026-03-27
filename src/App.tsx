@@ -5,14 +5,23 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CreateCreative from "./pages/CreateCreative";
 import CreativeResults from "./pages/CreativeResults";
+import History from "./pages/History";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+const ProtectedWithLayout = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>
+    <AppLayout>{children}</AppLayout>
+  </ProtectedRoute>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,9 +33,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/create" element={<ProtectedRoute><CreateCreative /></ProtectedRoute>} />
-            <Route path="/results/:requestId" element={<ProtectedRoute><CreativeResults /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedWithLayout><Dashboard /></ProtectedWithLayout>} />
+            <Route path="/create" element={<ProtectedWithLayout><CreateCreative /></ProtectedWithLayout>} />
+            <Route path="/results/:requestId" element={<ProtectedWithLayout><CreativeResults /></ProtectedWithLayout>} />
+            <Route path="/history" element={<ProtectedWithLayout><History /></ProtectedWithLayout>} />
+            <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -270,21 +270,8 @@ const CreateCreative = () => {
   const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
 
   return (
-    <div className="min-h-screen gradient-hero">
-      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-lg text-foreground">CreativeAI</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <CreditsBadge credits={credits?.credits_balance ?? 0} />
-          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>Dashboard</Button>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto px-4 py-10">
+    <div>
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {generatedAngles ? (
           <div className="space-y-8 animate-fade-in">
             <div className="text-center mb-8">

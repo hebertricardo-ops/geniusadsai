@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
-import CreditsBadge from "@/components/CreditsBadge";
 import { useNavigate } from "react-router-dom";
-import { Zap, Plus, Image, Clock, Sparkles, ArrowRight } from "lucide-react";
+import { Plus, Image, Clock, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +9,7 @@ import { format } from "date-fns";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const { data: credits } = useCredits();
 
   const { data: history = [] } = useQuery({
@@ -39,25 +38,8 @@ const Dashboard = () => {
     enabled: !!user,
   });
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   return (
-    <div className="min-h-screen gradient-hero">
-      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-lg text-foreground">CreativeAI</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <CreditsBadge credits={credits?.credits_balance ?? 0} />
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>Sair</Button>
-        </div>
-      </header>
+    <div>
 
       <div className="max-w-5xl mx-auto px-4 py-10">
         <div className="text-center mb-12 animate-fade-in">
