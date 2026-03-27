@@ -69,7 +69,13 @@ const RegenerateCreative = () => {
     );
   }
 
-  const { product_name, promise, pains, benefits, objections, cta, quantity } = prefill;
+  const [productName, setProductName] = useState(prefill.product_name);
+  const [promise, setPromise] = useState(prefill.promise);
+  const [pains, setPains] = useState(prefill.pains);
+  const [benefits, setBenefits] = useState(prefill.benefits);
+  const [objections, setObjections] = useState(prefill.objections);
+  const [cta, setCta] = useState(prefill.cta);
+  const [quantity, setQuantity] = useState(prefill.quantity);
 
   const handleGenerate = async () => {
     if (!user || images.length === 0) {
