@@ -111,7 +111,7 @@ const Profile = () => {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-8 animate-fade-in">
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2">Meu Perfil</h1>
+        <h1 className="text-3xl font-display text-foreground mb-2">Meu Perfil</h1>
         <p className="text-muted-foreground">Gerencie suas informações pessoais e créditos.</p>
       </div>
 
@@ -124,7 +124,7 @@ const Profile = () => {
                 {currentAvatar ? (
                   <AvatarImage src={currentAvatar} alt={displayName} />
                 ) : null}
-                <AvatarFallback className="bg-primary/20 text-primary text-xl font-display font-bold">
+                <AvatarFallback className="bg-primary/20 text-primary text-xl font-display">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -148,7 +148,7 @@ const Profile = () => {
               />
             </div>
             <div>
-              <h2 className="font-display font-bold text-lg text-foreground">{displayName || "Sem nome"}</h2>
+              <h2 className="font-display text-lg text-foreground">{displayName || "Sem nome"}</h2>
               <p className="text-sm text-muted-foreground">{displayEmail}</p>
             </div>
           </div>
@@ -188,7 +188,7 @@ const Profile = () => {
                 <Coins className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold text-foreground">
+                <p className="text-2xl font-display text-foreground">
                   {credits?.credits_balance ?? 0}
                 </p>
                 <p className="text-sm text-muted-foreground">créditos disponíveis</p>

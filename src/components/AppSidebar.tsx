@@ -45,7 +45,7 @@ export function AppSidebar() {
               <div className="w-6 h-6 rounded-md gradient-primary flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-primary-foreground">C</span>
               </div>
-              {!collapsed && <span className="font-display font-bold text-foreground">CreativeAI</span>}
+              {!collapsed && <span className="font-display text-foreground">CreativeAI</span>}
             </div>
           </SidebarGroupLabel>
 

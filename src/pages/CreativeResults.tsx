@@ -62,7 +62,7 @@ const CreativeResults = () => {
         ) : creatives.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <Image className="w-16 h-16 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-display font-bold text-foreground mb-2">Nenhum criativo encontrado</h2>
+            <h2 className="text-xl font-display text-foreground mb-2">Nenhum criativo encontrado</h2>
             <p className="text-muted-foreground mb-6">Não encontramos criativos para esta solicitação.</p>
             <Button variant="hero" onClick={() => navigate("/create")}>
               <Plus className="w-4 h-4" /> Criar Novo
@@ -81,7 +81,7 @@ const CreativeResults = () => {
             {/* Summary card */}
             {copyData && (
               <div className="gradient-card rounded-2xl p-6 border border-border shadow-card">
-                <h3 className="font-display font-bold text-foreground mb-4 text-lg">Resumo da Geração</h3>
+                <h3 className="font-display text-foreground mb-4 text-lg">Resumo da Geração</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                   {copyData.angle_name && (
                     <div>
@@ -128,7 +128,7 @@ const CreativeResults = () => {
             {/* Gallery */}
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-display font-bold text-foreground">Criativos Gerados</h2>
+                <h2 className="text-2xl font-display text-foreground">Criativos Gerados</h2>
                 {creatives.length > 1 && (
                   <Button variant="outline" size="sm" onClick={handleDownloadAll}>
                     <Download className="w-4 h-4" /> Baixar Todos

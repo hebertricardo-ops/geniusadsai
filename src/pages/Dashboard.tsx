@@ -43,7 +43,7 @@ const Dashboard = () => {
 
       <div className="max-w-5xl mx-auto px-4 py-10">
         <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
+          <h1 className="text-3xl md:text-4xl font-display text-foreground mb-3">
             Gere criativos que <span className="text-gradient">convertem</span>
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto mb-8">
@@ -67,14 +67,14 @@ const Dashboard = () => {
                 <Icon className={`w-5 h-5 ${color}`} />
                 <span className="text-sm text-muted-foreground">{label}</span>
               </div>
-              <span className={`text-2xl font-display font-bold ${color}`}>{value}</span>
+              <span className={`text-2xl font-display ${color}`}>{value}</span>
             </div>
           ))}
         </div>
 
         <div className="gradient-card rounded-2xl border border-border shadow-card overflow-hidden">
           <div className="p-6 border-b border-border">
-            <h2 className="text-lg font-display font-bold text-foreground">Histórico recente</h2>
+            <h2 className="text-lg font-display text-foreground">Histórico recente</h2>
             <p className="text-sm text-muted-foreground">Seus criativos ficam disponíveis por 7 dias</p>
           </div>
           <div className="divide-y divide-border">

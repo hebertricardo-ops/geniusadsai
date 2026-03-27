@@ -58,7 +58,7 @@ const Auth = () => {
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-display font-bold text-foreground">CreativeAI</span>
+            <span className="text-2xl font-display text-foreground">CreativeAI</span>
           </div>
           <p className="text-muted-foreground">
             {isLogin ? "Entre na sua conta" : "Crie sua conta gratuita"}

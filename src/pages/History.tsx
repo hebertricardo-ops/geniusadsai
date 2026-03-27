@@ -67,7 +67,7 @@ const History = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8 animate-fade-in">
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+        <h1 className="text-3xl font-display text-foreground mb-2">
           Histórico de Criativos
         </h1>
         <p className="text-muted-foreground">
@@ -99,7 +99,7 @@ const History = () => {
               >
                 <div className="p-5 border-b border-border flex items-center justify-between">
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-lg">
+                    <h3 className="font-display text-foreground text-lg">
                       {req.product_name}
                     </h3>
                     <div className="flex items-center gap-3 mt-1">
