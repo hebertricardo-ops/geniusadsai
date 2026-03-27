@@ -269,13 +269,13 @@ const RegenerateCreative = () => {
 
   const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
 
-  const infoSections = [
-    { icon: Package, label: "Produto", value: productName },
-    { icon: Target, label: "Promessa", value: promise },
-    { icon: ShieldAlert, label: "Dores", value: pains },
-    { icon: Sparkles, label: "Benefícios", value: benefits },
-    ...(objections ? [{ icon: MessageSquare, label: "Objeções", value: objections }] : []),
-    ...(cta ? [{ icon: Zap, label: "CTA", value: cta }] : []),
+  const editableFields = [
+    { icon: Package, label: "Produto", value: productName, onChange: setProductName, type: "input" as const },
+    { icon: Target, label: "Promessa", value: promise, onChange: setPromise, type: "input" as const },
+    { icon: ShieldAlert, label: "Dores", value: pains, onChange: setPains, type: "textarea" as const },
+    { icon: Sparkles, label: "Benefícios", value: benefits, onChange: setBenefits, type: "textarea" as const },
+    { icon: MessageSquare, label: "Objeções", value: objections, onChange: setObjections, type: "textarea" as const },
+    { icon: Zap, label: "CTA", value: cta, onChange: setCta, type: "input" as const },
   ];
 
   return (
