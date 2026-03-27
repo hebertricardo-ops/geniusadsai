@@ -59,6 +59,13 @@ const RegenerateCreative = () => {
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
   const [generatingCreative, setGeneratingCreative] = useState(false);
+  const [productName, setProductName] = useState(prefill?.product_name ?? "");
+  const [promise, setPromise] = useState(prefill?.promise ?? "");
+  const [pains, setPains] = useState(prefill?.pains ?? "");
+  const [benefits, setBenefits] = useState(prefill?.benefits ?? "");
+  const [objections, setObjections] = useState(prefill?.objections ?? "");
+  const [cta, setCta] = useState(prefill?.cta ?? "");
+  const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
 
   if (!prefill) {
     return (
@@ -68,14 +75,6 @@ const RegenerateCreative = () => {
       </div>
     );
   }
-
-  const [productName, setProductName] = useState(prefill.product_name);
-  const [promise, setPromise] = useState(prefill.promise);
-  const [pains, setPains] = useState(prefill.pains);
-  const [benefits, setBenefits] = useState(prefill.benefits);
-  const [objections, setObjections] = useState(prefill.objections);
-  const [cta, setCta] = useState(prefill.cta);
-  const [quantity, setQuantity] = useState(prefill.quantity);
 
   const handleGenerate = async () => {
     if (!user || images.length === 0) {
