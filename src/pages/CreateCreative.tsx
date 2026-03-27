@@ -254,7 +254,11 @@ const CreateCreative = () => {
       queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
       toast({ title: "Criativos gerados!", description: `${generatedImages.length} criativo(s) gerado(s) com sucesso.` });
-      navigate("/dashboard");
+      if (requestId) {
+        navigate(`/results/${requestId}`);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err: any) {
       console.error(err);
       toast({ title: "Erro ao gerar criativo", description: err.message || "Tente novamente.", variant: "destructive" });
