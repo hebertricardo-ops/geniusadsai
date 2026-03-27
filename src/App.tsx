@@ -13,6 +13,7 @@ import CreateCreative from "./pages/CreateCreative";
 import CreativeResults from "./pages/CreativeResults";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import RegenerateCreative from "./pages/RegenerateCreative";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
