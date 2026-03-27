@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Changa+One&family=Inter:wght@400;500;600&display=swap');
+/* Font loaded via index.html link tag */
 
 @layer base {
   :root {
