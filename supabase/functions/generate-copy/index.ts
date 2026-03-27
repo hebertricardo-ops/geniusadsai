@@ -14,23 +14,45 @@ serve(async (req) => {
 
     const { product_name, promise, pains, benefits, objections, cta } = await req.json();
 
-    const systemPrompt = `Você é um copywriter especialista em anúncios que faturam múltiplos 6 dígitos. Gere copies curtas, diretas e voltadas para conversão em Meta Ads.`;
+    const systemPrompt = `Você é um copywriter de elite, especialista em criativos estáticos de alta conversão para Meta Ads (Facebook e Instagram). Você gera copies em português do Brasil.
 
-    const userPrompt = `Com base nas informações abaixo, gere 3 variações de copy com ângulos completamente diferentes.
+REGRAS OBRIGATÓRIAS:
+- Headline com gancho forte e impactante
+- Linguagem clara, persuasiva e direta — nada genérico
+- Foco total em conversão
+- CTA coerente com o que o usuário informou
+- Textos curtos — pense em criativo estático de anúncio, não em artigo
+- Subheadline é opcional — use apenas quando agregar valor
+- Todas as copies em português do Brasil
+
+DISTRIBUIÇÃO ESTRATÉGICA DOS 3 ÂNGULOS:
+- Ângulo 1: Explorar a DOR PRINCIPAL do público
+- Ângulo 2: Explorar o BENEFÍCIO / TRANSFORMAÇÃO
+- Ângulo 3: Quebrar OBJEÇÃO / mostrar PRATICIDADE / RAPIDEZ / PROVA IMPLÍCITA
+
+Cada ângulo deve ser genuinamente diferente dos outros em abordagem e tom.
+
+OPÇÕES VISUAIS POR ÂNGULO:
+Para cada ângulo, gere 2 opções de conceito visual para o criativo estático:
+- Opção A: layout mais clean e premium
+- Opção B: layout mais agressivo e de anúncio direto
+
+Cada opção visual deve conter orientações de:
+- Descrição curta da linha visual
+- Distribuição sugerida dos elementos no criativo
+- Orientação de composição
+- Proposta de hierarquia visual
+- Estilo do layout
+- Como destacar o CTA visualmente`;
+
+    const userPrompt = `Gere 3 ângulos de copy com 2 opções visuais cada para o seguinte produto:
 
 Produto: ${product_name}
 Promessa: ${promise}
 Dores: ${pains}
 Benefícios: ${benefits}
 Objeções: ${objections || "Nenhuma informada"}
-CTA: ${cta || "Compre agora"}
-
-Para cada variação, retorne em JSON:
-- angle_name: nome do ângulo
-- headline: gancho forte
-- subheadline: complemento
-- body: corpo curto e persuasivo
-- cta: chamada para ação`;
+CTA desejado: ${cta || "Compre agora"}`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -49,26 +71,44 @@ Para cada variação, retorne em JSON:
             type: "function",
             function: {
               name: "generate_copies",
-              description: "Return 3 ad copy variations with different angles",
+              description: "Return 3 ad copy angles, each with 2 visual concept options",
               parameters: {
                 type: "object",
                 properties: {
-                  copies: {
+                  angles: {
                     type: "array",
+                    description: "3 different copy angles",
                     items: {
                       type: "object",
                       properties: {
-                        angle_name: { type: "string" },
-                        headline: { type: "string" },
-                        subheadline: { type: "string" },
-                        body: { type: "string" },
-                        cta: { type: "string" },
+                        angle_name: { type: "string", description: "Nome do ângulo (ex: Dor Principal, Transformação, Quebra de Objeção)" },
+                        headline: { type: "string", description: "Gancho forte e impactante" },
+                        subheadline: { type: "string", description: "Complemento opcional da headline" },
+                        body: { type: "string", description: "Corpo curto e persuasivo" },
+                        cta: { type: "string", description: "Chamada para ação" },
+                        visual_options: {
+                          type: "array",
+                          description: "2 opções de conceito visual para este ângulo",
+                          items: {
+                            type: "object",
+                            properties: {
+                              option_label: { type: "string", description: "Ex: Opção A - Clean Premium ou Opção B - Agressivo Direto" },
+                              visual_description: { type: "string", description: "Mini descrição da linha visual" },
+                              element_distribution: { type: "string", description: "Distribuição sugerida dos elementos no criativo" },
+                              composition: { type: "string", description: "Orientação de composição" },
+                              visual_hierarchy: { type: "string", description: "Proposta de hierarquia visual" },
+                              layout_style: { type: "string", description: "Estilo do layout" },
+                              cta_highlight: { type: "string", description: "Como destacar o CTA visualmente" },
+                            },
+                            required: ["option_label", "visual_description", "element_distribution", "composition", "visual_hierarchy", "layout_style", "cta_highlight"],
+                          },
+                        },
                       },
-                      required: ["angle_name", "headline", "subheadline", "body", "cta"],
+                      required: ["angle_name", "headline", "body", "cta", "visual_options"],
                     },
                   },
                 },
-                required: ["copies"],
+                required: ["angles"],
               },
             },
           },
@@ -97,9 +137,9 @@ Para cada variação, retorne em JSON:
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("No tool call in response");
 
-    const copies = JSON.parse(toolCall.function.arguments);
+    const result = JSON.parse(toolCall.function.arguments);
 
-    return new Response(JSON.stringify(copies), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

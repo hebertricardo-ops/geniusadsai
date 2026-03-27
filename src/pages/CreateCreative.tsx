@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Stepper from "@/components/Stepper";
 import ImageUpload from "@/components/ImageUpload";
 import CreditsBadge from "@/components/CreditsBadge";
-import { ArrowLeft, ArrowRight, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const STEPS = ["Imagens", "Produto", "Persuasão", "CTA"];
+
+interface VisualOption {
+  option_label: string;
+  visual_description: string;
+  element_distribution: string;
+  composition: string;
+  visual_hierarchy: string;
+  layout_style: string;
+  cta_highlight: string;
+}
+
+interface CopyAngle {
+  angle_name: string;
+  headline: string;
+  subheadline?: string;
+  body: string;
+  cta: string;
+  visual_options: VisualOption[];
+}
 
 const CreateCreative = () => {
   const [step, setStep] = useState(0);
@@ -27,7 +46,10 @@ const CreateCreative = () => {
   const [objections, setObjections] = useState("");
   const [cta, setCta] = useState("");
   const [loading, setLoading] = useState(false);
-  const [generatedCopies, setGeneratedCopies] = useState<any[] | null>(null);
+  const [generatedAngles, setGeneratedAngles] = useState<CopyAngle[] | null>(null);
+  const [selectedAngle, setSelectedAngle] = useState<number | null>(null);
+  const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
+  const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -86,7 +108,9 @@ const CreateCreative = () => {
       });
       if (copyError) throw copyError;
 
-      setGeneratedCopies(copyData.copies);
+      setGeneratedAngles(copyData.angles);
+      setSelectedAngle(null);
+      setSelectedVisual(null);
 
       // 4. Deduct credits
       await supabase
@@ -114,7 +138,7 @@ const CreateCreative = () => {
       queryClient.invalidateQueries({ queryKey: ["credits"] });
       queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
-      toast({ title: "Copies geradas!", description: "Suas variações de copy estão prontas." });
+      toast({ title: "Copies geradas!", description: "Escolha seu ângulo e opção visual." });
     } catch (err: any) {
       console.error(err);
       toast({ title: "Erro ao gerar", description: err.message || "Tente novamente.", variant: "destructive" });
@@ -122,6 +146,20 @@ const CreateCreative = () => {
       setLoading(false);
     }
   };
+
+  const handleGenerateCreative = () => {
+    if (selectedAngle === null || selectedVisual === null || !generatedAngles) return;
+    const angle = generatedAngles[selectedAngle];
+    const visual = angle.visual_options[selectedVisual];
+    toast({
+      title: "Gerando criativo...",
+      description: `Ângulo: ${angle.angle_name} | ${visual.option_label}`,
+    });
+    // TODO: integrate with image generation API
+    navigate("/dashboard");
+  };
+
+  const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
 
   return (
     <div className="min-h-screen gradient-hero">
@@ -138,30 +176,127 @@ const CreateCreative = () => {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        {generatedCopies ? (
-          <div className="space-y-6 animate-fade-in">
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        {generatedAngles ? (
+          <div className="space-y-8 animate-fade-in">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-display font-bold text-foreground mb-2">Copies Geradas 🎉</h2>
-              <p className="text-muted-foreground">3 ângulos de copy para "{productName}"</p>
+              <h2 className="text-2xl font-display font-bold text-foreground mb-2">Escolha seu Ângulo e Conceito Visual</h2>
+              <p className="text-muted-foreground">3 ângulos × 2 opções visuais = 6 conceitos para "{productName}"</p>
             </div>
-            {generatedCopies.map((copy: any, i: number) => (
-              <div key={i} className="gradient-card rounded-2xl p-6 border border-border shadow-card space-y-3">
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">{copy.angle_name}</span>
-                <h3 className="text-xl font-display font-bold text-foreground">{copy.headline}</h3>
-                <p className="text-sm text-muted-foreground font-medium">{copy.subheadline}</p>
-                <p className="text-sm text-foreground/80">{copy.body}</p>
-                <div className="pt-2">
-                  <span className="inline-block px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-semibold">{copy.cta}</span>
+
+            {/* Angle selection */}
+            <div className="space-y-6">
+              {generatedAngles.map((angle, angleIdx) => (
+                <div key={angleIdx} className="space-y-4">
+                  {/* Angle header card */}
+                  <div
+                    className={`gradient-card rounded-2xl p-6 border-2 shadow-card cursor-pointer transition-all duration-200 ${
+                      selectedAngle === angleIdx
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                    onClick={() => {
+                      setSelectedAngle(angleIdx);
+                      setSelectedVisual(null);
+                      setExpandedAngle(expandedAngle === angleIdx ? null : angleIdx);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                            {angleLabels[angleIdx] || angle.angle_name}
+                          </span>
+                          {selectedAngle === angleIdx && (
+                            <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              <Check className="w-3 h-3" /> Selecionado
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-xl font-display font-bold text-foreground">{angle.headline}</h3>
+                        {angle.subheadline && (
+                          <p className="text-sm text-muted-foreground font-medium">{angle.subheadline}</p>
+                        )}
+                        <p className="text-sm text-foreground/80">{angle.body}</p>
+                        <div className="pt-2">
+                          <span className="inline-block px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-semibold">
+                            {angle.cta}
+                          </span>
+                        </div>
+                      </div>
+                      <Eye className="w-5 h-5 text-muted-foreground mt-1 shrink-0 ml-4" />
+                    </div>
+                  </div>
+
+                  {/* Visual options - show when angle is expanded */}
+                  {(expandedAngle === angleIdx || selectedAngle === angleIdx) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4 animate-fade-in">
+                      {angle.visual_options.map((visual, visIdx) => (
+                        <div
+                          key={visIdx}
+                          className={`rounded-xl p-5 border-2 cursor-pointer transition-all duration-200 ${
+                            selectedAngle === angleIdx && selectedVisual === visIdx
+                              ? "bg-primary/5 border-primary ring-2 ring-primary/20"
+                              : "bg-background/50 border-border hover:border-primary/40"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAngle(angleIdx);
+                            setSelectedVisual(visIdx);
+                          }}
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="font-display font-semibold text-sm text-foreground">
+                                {visual.option_label}
+                              </span>
+                              {selectedAngle === angleIdx && selectedVisual === visIdx && (
+                                <Check className="w-4 h-4 text-primary" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{visual.visual_description}</p>
+                            <div className="space-y-2 text-xs">
+                              <div>
+                                <span className="font-semibold text-foreground/70">Elementos:</span>{" "}
+                                <span className="text-muted-foreground">{visual.element_distribution}</span>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-foreground/70">Composição:</span>{" "}
+                                <span className="text-muted-foreground">{visual.composition}</span>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-foreground/70">Hierarquia:</span>{" "}
+                                <span className="text-muted-foreground">{visual.visual_hierarchy}</span>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-foreground/70">Layout:</span>{" "}
+                                <span className="text-muted-foreground">{visual.layout_style}</span>
+                              </div>
+                              <div>
+                                <span className="font-semibold text-foreground/70">CTA:</span>{" "}
+                                <span className="text-muted-foreground">{visual.cta_highlight}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Actions */}
             <div className="flex gap-4 justify-center pt-4">
-              <Button variant="outline" onClick={() => { setGeneratedCopies(null); setStep(0); setImages([]); }}>
+              <Button variant="outline" onClick={() => { setGeneratedAngles(null); setStep(0); setImages([]); }}>
                 Novo Criativo
               </Button>
-              <Button variant="hero" onClick={() => navigate("/dashboard")}>
-                Ir para Dashboard
+              <Button
+                variant="hero"
+                onClick={handleGenerateCreative}
+                disabled={selectedAngle === null || selectedVisual === null}
+              >
+                <Sparkles className="w-4 h-4" /> Gerar Criativo
               </Button>
             </div>
           </div>
@@ -255,7 +390,7 @@ const CreateCreative = () => {
                   </Button>
                 ) : (
                   <Button variant="hero" onClick={handleGenerate} disabled={loading}>
-                    {loading ? "Gerando..." : <><Sparkles className="w-4 h-4" /> Gerar Criativos</>}
+                    {loading ? "Gerando..." : <><Sparkles className="w-4 h-4" /> Gerar variações de copy</>}
                   </Button>
                 )}
               </div>
