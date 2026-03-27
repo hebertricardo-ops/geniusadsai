@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Stepper from "@/components/Stepper";
 import ImageUpload from "@/components/ImageUpload";
 import CreditsBadge from "@/components/CreditsBadge";
-import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye, Plus, X, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
