@@ -401,8 +401,8 @@ const CreateCreative = () => {
                   </div>
                   <ImageUpload images={images} onImagesChange={setImages} />
                   <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Quantidade de criativos (1-5)</Label>
-                    <Input type="number" min={1} max={5} value={quantity} onChange={(e) => setQuantity(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))} className="bg-background/50 border-border w-24" />
+                    <Label className="text-sm text-muted-foreground">Quantidade de criativos (1-4)</Label>
+                    <Input type="number" min={1} max={4} value={quantity} onChange={(e) => setQuantity(Math.min(4, Math.max(1, parseInt(e.target.value) || 1)))} className="bg-background/50 border-border w-24" />
                     <p className="text-xs text-muted-foreground">Cada criativo consome 1 crédito</p>
                   </div>
                 </div>
