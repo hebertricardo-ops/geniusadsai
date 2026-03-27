@@ -9,7 +9,7 @@ const CreativeResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: credits } = useCredits();
+  
 
   const { data: creatives = [], isLoading } = useQuery({
     queryKey: ["creative-results", requestId],
