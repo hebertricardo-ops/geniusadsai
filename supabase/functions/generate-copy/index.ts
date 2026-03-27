@@ -34,8 +34,14 @@ Cada ângulo deve ser genuinamente diferente dos outros em abordagem e tom.
 
 OPÇÕES VISUAIS POR ÂNGULO:
 Para cada ângulo, gere 2 opções de conceito visual para o criativo estático:
-- Opção A: layout mais clean e premium
-- Opção B: layout mais agressivo e de anúncio direto
+- Opção A: layout clean e premium — design sofisticado, minimalista e elegante
+- Opção B: layout clean e premium com copy mais agressiva e urgente — o design CONTINUA sofisticado e premium como a Opção A, porém com mensagem mais direta e impactante. Pode incluir mais destaque de cor no botão de CTA ou em elementos estratégicos para gerar urgência visual.
+
+REGRA IMPORTANTE PARA AMBAS AS OPÇÕES:
+- Identifique o produto, nicho e suas características
+- Inclua elementos visuais temáticos (ícones, figurinhas, badges, selos) que estejam alinhados com o produto e nicho do anúncio
+- Esses elementos devem reforçar a identidade do nicho e tornar o criativo mais contextualizado e profissional
+- Exemplos: nicho fitness → ícones de halteres, chamas, troféus; nicho beleza → elementos florais, brilhos; nicho educação → livros, lâmpadas, estrelas
 
 Cada opção visual deve conter orientações de:
 - Descrição curta da linha visual
@@ -43,7 +49,8 @@ Cada opção visual deve conter orientações de:
 - Orientação de composição
 - Proposta de hierarquia visual
 - Estilo do layout
-- Como destacar o CTA visualmente`;
+- Como destacar o CTA visualmente
+- Elementos temáticos sugeridos (ícones/figurinhas alinhados ao nicho)`;
 
     const userPrompt = `Gere 3 ângulos de copy com 2 opções visuais cada para o seguinte produto:
 
