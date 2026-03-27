@@ -275,7 +275,7 @@ const CreateCreative = () => {
         {generatedAngles ? (
           <div className="space-y-8 animate-fade-in">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-display font-bold text-foreground mb-2">Escolha seu Ângulo e Conceito Visual</h2>
+              <h2 className="text-2xl font-display text-foreground mb-2">Escolha seu Ângulo e Conceito Visual</h2>
               <p className="text-muted-foreground">3 ângulos × 2 opções visuais = 6 conceitos para "{productName}"</p>
             </div>
 
@@ -308,7 +308,7 @@ const CreateCreative = () => {
                             </span>
                           )}
                         </div>
-                        <h3 className="text-xl font-display font-bold text-foreground">{angle.headline}</h3>
+                        <h3 className="text-xl font-display text-foreground">{angle.headline}</h3>
                         {angle.subheadline && (
                           <p className="text-sm text-muted-foreground font-medium">{angle.subheadline}</p>
                         )}
@@ -401,7 +401,7 @@ const CreateCreative = () => {
                       }`}
                       onClick={() => setFormat(f.value)}
                     >
-                      <span className="font-display font-bold text-foreground">{f.label}</span>
+                      <span className="font-display text-foreground">{f.label}</span>
                       <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
                     </div>
                   ))}
@@ -430,7 +430,7 @@ const CreateCreative = () => {
               {step === 0 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-display font-bold text-foreground mb-2">Envie suas imagens</h2>
+                    <h2 className="text-xl font-display text-foreground mb-2">Envie suas imagens</h2>
                     <p className="text-muted-foreground text-sm">Faça upload das imagens do produto (máx. 4)</p>
                   </div>
                   <ImageUpload images={images} onImagesChange={setImages} />
@@ -459,7 +459,7 @@ const CreateCreative = () => {
               {step === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-display font-bold text-foreground mb-2">Sobre o produto</h2>
+                    <h2 className="text-xl font-display text-foreground mb-2">Sobre o produto</h2>
                     <p className="text-muted-foreground text-sm">Informações para gerar a copy do anúncio</p>
                   </div>
                   <div className="space-y-4">
@@ -477,7 +477,7 @@ const CreateCreative = () => {
               {step === 2 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-display font-bold text-foreground mb-2">Elementos de persuasão</h2>
+                    <h2 className="text-xl font-display text-foreground mb-2">Elementos de persuasão</h2>
                     <p className="text-muted-foreground text-sm">Dores, benefícios e objeções do público-alvo</p>
                   </div>
                   <div className="space-y-4">
@@ -499,7 +499,7 @@ const CreateCreative = () => {
               {step === 3 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-display font-bold text-foreground mb-2">Call to Action</h2>
+                    <h2 className="text-xl font-display text-foreground mb-2">Call to Action</h2>
                     <p className="text-muted-foreground text-sm">Defina o CTA do seu anúncio (opcional)</p>
                   </div>
                   <div className="space-y-2">

@@ -13,7 +13,7 @@ const Index = () => {
           <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
             <Zap className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-display font-bold text-foreground">CreativeAI</span>
+          <span className="text-xl font-display text-foreground">CreativeAI</span>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
@@ -31,7 +31,7 @@ const Index = () => {
           <Sparkles className="w-4 h-4 text-primary" />
           <span className="text-sm text-muted-foreground font-medium">Powered by AI</span>
         </div>
-        <h1 className="text-4xl md:text-6xl font-display font-bold text-foreground leading-tight mb-6 animate-fade-in">
+        <h1 className="text-4xl md:text-6xl font-display text-foreground leading-tight mb-6 animate-fade-in">
           Criativos que{" "}
           <span className="text-gradient">vendem</span>
           <br />
@@ -88,7 +88,7 @@ const Index = () => {
 
       {/* How it works */}
       <section className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-12">
+        <h2 className="text-2xl md:text-3xl font-display text-foreground mb-12">
           Como funciona
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -99,7 +99,7 @@ const Index = () => {
             { step: "4", title: "Baixe", desc: "Criativos prontos para usar" },
           ].map(({ step, title, desc }) => (
             <div key={step} className="space-y-3">
-              <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center mx-auto shadow-glow font-display font-bold text-primary-foreground">
+              <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center mx-auto shadow-glow font-display text-primary-foreground">
                 {step}
               </div>
               <h3 className="font-display font-semibold text-foreground">{title}</h3>
@@ -112,7 +112,7 @@ const Index = () => {
       {/* CTA */}
       <section className="max-w-3xl mx-auto px-4 py-20 text-center">
         <div className="gradient-card rounded-2xl p-10 border border-border shadow-card">
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
+          <h2 className="text-2xl md:text-3xl font-display text-foreground mb-4">
             Pronto para criar criativos que <span className="text-gradient">convertem</span>?
           </h2>
           <p className="text-muted-foreground mb-8">
