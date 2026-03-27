@@ -1,16 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const FORMAT_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "1:1": { width: 1024, height: 1024 },
-  "4:5": { width: 1024, height: 1280 },
-  "9:16": { width: 1024, height: 1820 },
-  "16:9": { width: 1820, height: 1024 },
+const FORMAT_TO_RATIO: Record<string, string> = {
+  "1:1": "1:1",
+  "4:5": "4:5",
+  "9:16": "9:16",
+  "16:9": "16:9",
 };
 
 function buildPrompt(data: {
@@ -64,6 +63,16 @@ Rules:
 - Do NOT add any text to the image — only visual composition`;
 }
 
+async function safeJsonParse(response: Response, label: string): Promise<any> {
+  const text = await response.text();
+  console.log(`${label} status: ${response.status}, body (500 chars): ${text.substring(0, 500)}`);
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`${label} returned invalid JSON (status ${response.status}): ${text.substring(0, 200)}`);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -89,12 +98,11 @@ serve(async (req) => {
       quantity,
     } = await req.json();
 
-    // Validate inputs
     if (!image_urls?.length) throw new Error("At least one image is required");
     if (!product_name || !headline || !cta || !visual_option) throw new Error("Missing required fields");
 
     const numImages = Math.min(Math.max(1, quantity || 1), 4);
-    const dimensions = FORMAT_DIMENSIONS[format] || FORMAT_DIMENSIONS["1:1"];
+    const aspectRatio = FORMAT_TO_RATIO[format] || "1:1";
 
     const prompt = buildPrompt({
       product_name,
@@ -108,7 +116,8 @@ serve(async (req) => {
       visual_option,
     });
 
-    // Call fal.ai nano-banana-pro/edit
+    console.log("Calling fal.ai with image_urls:", image_urls.length, "aspect_ratio:", aspectRatio, "num_images:", numImages);
+
     const falResponse = await fetch("https://queue.fal.run/fal-ai/nano-banana-pro/edit", {
       method: "POST",
       headers: {
@@ -116,69 +125,55 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        image_url: image_urls[0],
+        image_urls: image_urls,
         prompt,
-        image_size: {
-          width: dimensions.width,
-          height: dimensions.height,
-        },
+        aspect_ratio: aspectRatio,
         num_images: numImages,
-        safety_tolerance: 2,
+        output_format: "png",
+        safety_tolerance: "4",
       }),
     });
 
-    const falResponseText = await falResponse.text();
-    console.log("fal.ai response status:", falResponse.status);
-    console.log("fal.ai response body (first 500 chars):", falResponseText.substring(0, 500));
+    const falData = await safeJsonParse(falResponse, "fal.ai submit");
 
     if (!falResponse.ok) {
-      console.error("fal.ai error:", falResponse.status, falResponseText);
-      throw new Error(`fal.ai error: ${falResponse.status} - ${falResponseText.substring(0, 200)}`);
+      throw new Error(`fal.ai error: ${falResponse.status} - ${JSON.stringify(falData).substring(0, 300)}`);
     }
 
-    let falData: any;
-    try {
-      falData = JSON.parse(falResponseText);
-    } catch (parseErr) {
-      console.error("Failed to parse fal.ai response as JSON:", falResponseText.substring(0, 500));
-      throw new Error("fal.ai returned invalid JSON response");
-    }
-
-    // Check if queued (async mode)
+    // If queued (async mode), poll for result
     if (falData.request_id && !falData.images) {
-      // Poll for result
       const requestId = falData.request_id;
-      let result = null;
+      console.log("fal.ai queued, polling request_id:", requestId);
+
       for (let i = 0; i < 60; i++) {
         await new Promise((r) => setTimeout(r, 2000));
-        const statusRes = await fetch(`https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}/status`, {
-          headers: { Authorization: `Key ${FAL_KEY}` },
-        });
-        const statusData = await statusRes.json();
+
+        const statusRes = await fetch(
+          `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}/status`,
+          { headers: { Authorization: `Key ${FAL_KEY}` } }
+        );
+        const statusData = await safeJsonParse(statusRes, "fal.ai status poll");
+
         if (statusData.status === "COMPLETED") {
-          const resultRes = await fetch(`https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}`, {
-            headers: { Authorization: `Key ${FAL_KEY}` },
+          const resultRes = await fetch(
+            `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}`,
+            { headers: { Authorization: `Key ${FAL_KEY}` } }
+          );
+          const result = await safeJsonParse(resultRes, "fal.ai result");
+
+          return new Response(JSON.stringify({ images: result.images || [] }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
-          result = await resultRes.json();
-          break;
         }
         if (statusData.status === "FAILED") {
-          throw new Error("fal.ai generation failed");
+          throw new Error("fal.ai generation failed: " + JSON.stringify(statusData).substring(0, 300));
         }
       }
-      if (!result) throw new Error("fal.ai generation timed out");
-
-      return new Response(JSON.stringify({
-        images: result.images || [],
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("fal.ai generation timed out after 120s");
     }
 
     // Sync response
-    return new Response(JSON.stringify({
-      images: falData.images || [],
-    }), {
+    return new Response(JSON.stringify({ images: falData.images || [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
