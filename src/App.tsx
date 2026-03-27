@@ -13,6 +13,7 @@ import CreateCreative from "./pages/CreateCreative";
 import CreativeResults from "./pages/CreativeResults";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import RegenerateCreative from "./pages/RegenerateCreative";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/create" element={<ProtectedWithLayout><CreateCreative /></ProtectedWithLayout>} />
             <Route path="/results/:requestId" element={<ProtectedWithLayout><CreativeResults /></ProtectedWithLayout>} />
             <Route path="/history" element={<ProtectedWithLayout><History /></ProtectedWithLayout>} />
+            <Route path="/regenerate" element={<ProtectedWithLayout><RegenerateCreative /></ProtectedWithLayout>} />
             <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

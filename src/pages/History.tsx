@@ -142,7 +142,7 @@ const History = () => {
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        navigate("/create", {
+                        navigate("/regenerate", {
                           state: {
                             prefill: {
                               product_name: req.product_name,
