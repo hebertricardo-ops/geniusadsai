@@ -428,9 +428,24 @@ const CreateCreative = () => {
                     <p className="text-muted-foreground text-sm">Faça upload das imagens do produto (máx. 4)</p>
                   </div>
                   <ImageUpload images={images} onImagesChange={setImages} />
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Quantidade de criativos (1-4)</Label>
-                    <Input type="number" min={1} max={4} value={quantity} onChange={(e) => setQuantity(Math.min(4, Math.max(1, parseInt(e.target.value) || 1)))} className="bg-background/50 border-border w-24" />
+                  <div className="space-y-3">
+                    <Label className="text-sm text-muted-foreground">Quantidade de criativos</Label>
+                    <div className="flex gap-3">
+                      {[1, 2, 3, 4].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setQuantity(num)}
+                          className={`flex items-center justify-center w-14 h-14 rounded-xl border-2 text-lg font-bold transition-all duration-200 ${
+                            quantity === num
+                              ? "border-primary bg-primary/10 text-primary shadow-md scale-105"
+                              : "border-border bg-background/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
                     <p className="text-xs text-muted-foreground">Cada criativo consome 1 crédito</p>
                   </div>
                 </div>
