@@ -29,6 +29,7 @@ function buildPrompt(data: {
     visual_hierarchy: string;
     layout_style: string;
     cta_highlight: string;
+    thematic_elements?: string;
   };
 }): string {
   const benefitsList = data.benefits
