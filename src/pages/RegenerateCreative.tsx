@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ImageUpload from "@/components/ImageUpload";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import CreditsBadge from "@/components/CreditsBadge";
 import { Sparkles, Loader2, Check, Eye, Package, Target, ShieldAlert, MessageSquare, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +59,13 @@ const RegenerateCreative = () => {
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
   const [generatingCreative, setGeneratingCreative] = useState(false);
+  const [productName, setProductName] = useState(prefill?.product_name ?? "");
+  const [promise, setPromise] = useState(prefill?.promise ?? "");
+  const [pains, setPains] = useState(prefill?.pains ?? "");
+  const [benefits, setBenefits] = useState(prefill?.benefits ?? "");
+  const [objections, setObjections] = useState(prefill?.objections ?? "");
+  const [cta, setCta] = useState(prefill?.cta ?? "");
+  const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
 
   if (!prefill) {
     return (
@@ -65,8 +75,6 @@ const RegenerateCreative = () => {
       </div>
     );
   }
-
-  const { product_name, promise, pains, benefits, objections, cta, quantity } = prefill;
 
   const handleGenerate = async () => {
     if (!user || images.length === 0) {
@@ -92,7 +100,7 @@ const RegenerateCreative = () => {
         .from("creative_requests")
         .insert({
           user_id: user.id,
-          product_name,
+          product_name: productName,
           promise,
           pains,
           benefits,
@@ -106,7 +114,7 @@ const RegenerateCreative = () => {
       if (reqError) throw reqError;
 
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name, promise, pains, benefits, objections, cta },
+        body: { product_name: productName, promise, pains, benefits, objections, cta },
       });
       if (copyError) throw copyError;
 
@@ -126,7 +134,7 @@ const RegenerateCreative = () => {
         user_id: user.id,
         type: "usage",
         amount: -quantity,
-        description: `Regeneração de criativos: ${product_name}`,
+        description: `Regeneração de criativos: ${productName}`,
       });
 
       await supabase
@@ -173,7 +181,7 @@ const RegenerateCreative = () => {
       const { data: creativeData, error: creativeError } = await supabase.functions.invoke("generate-creative", {
         body: {
           image_urls: imageUrls,
-          product_name,
+          product_name: productName,
           promise,
           pains,
           benefits,
@@ -201,7 +209,7 @@ const RegenerateCreative = () => {
         .from("creative_requests")
         .select("id")
         .eq("user_id", user.id)
-        .eq("product_name", product_name)
+        .eq("product_name", productName)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -239,7 +247,7 @@ const RegenerateCreative = () => {
         user_id: user.id,
         type: "usage",
         amount: -usedCredits,
-        description: `Criativos regenerados: ${product_name} (${angle.angle_name})`,
+        description: `Criativos regenerados: ${productName} (${angle.angle_name})`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["credits"] });
@@ -261,13 +269,13 @@ const RegenerateCreative = () => {
 
   const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
 
-  const infoSections = [
-    { icon: Package, label: "Produto", value: product_name },
-    { icon: Target, label: "Promessa", value: promise },
-    { icon: ShieldAlert, label: "Dores", value: pains },
-    { icon: Sparkles, label: "Benefícios", value: benefits },
-    ...(objections ? [{ icon: MessageSquare, label: "Objeções", value: objections }] : []),
-    ...(cta ? [{ icon: Zap, label: "CTA", value: cta }] : []),
+  const editableFields = [
+    { icon: Package, label: "Produto", value: productName, onChange: setProductName, type: "input" as const },
+    { icon: Target, label: "Promessa", value: promise, onChange: setPromise, type: "input" as const },
+    { icon: ShieldAlert, label: "Dores", value: pains, onChange: setPains, type: "textarea" as const },
+    { icon: Sparkles, label: "Benefícios", value: benefits, onChange: setBenefits, type: "textarea" as const },
+    { icon: MessageSquare, label: "Objeções", value: objections, onChange: setObjections, type: "textarea" as const },
+    { icon: Zap, label: "CTA", value: cta, onChange: setCta, type: "input" as const },
   ];
 
   return (
@@ -287,28 +295,54 @@ const RegenerateCreative = () => {
             <ImageUpload images={images} onImagesChange={setImages} maxImages={4} />
           </div>
 
-          {/* Info report */}
+          {/* Editable fields */}
           <div className="gradient-card rounded-2xl border border-border p-6">
-            <h2 className="font-display text-foreground text-lg mb-5">📋 Resumo do Criativo</h2>
-            <div className="space-y-4">
-              {infoSections.map(({ icon: Icon, label, value }) => (
+            <h2 className="font-display text-foreground text-lg mb-5">📋 Dados do Criativo</h2>
+            <div className="space-y-5">
+              {editableFields.map(({ icon: Icon, label, value, onChange, type }) => (
                 <div key={label} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+                  <div className="mt-2 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
                     <Icon className="w-4 h-4 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
-                    <p className="text-sm text-foreground mt-0.5 whitespace-pre-line">{value}</p>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
+                    {type === "textarea" ? (
+                      <Textarea
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="text-sm min-h-[72px] bg-background/50"
+                      />
+                    ) : (
+                      <Input
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="text-sm bg-background/50"
+                      />
+                    )}
                   </div>
                 </div>
               ))}
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+                <div className="mt-2 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
                   <Sparkles className="w-4 h-4 text-primary" />
                 </div>
-                <div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quantidade</span>
-                  <p className="text-sm text-foreground mt-0.5">{quantity} criativo{quantity > 1 ? "s" : ""}</p>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quantidade</Label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((n) => (
+                      <div
+                        key={n}
+                        className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all text-sm font-display ${
+                          quantity === n
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background/50 text-muted-foreground hover:border-primary/40"
+                        }`}
+                        onClick={() => setQuantity(n)}
+                      >
+                        {n}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -340,7 +374,7 @@ const RegenerateCreative = () => {
         <div className="space-y-8 animate-fade-in">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-display text-foreground mb-2">Escolha seu Ângulo e Conceito Visual</h2>
-            <p className="text-muted-foreground">3 ângulos × 2 opções visuais = 6 conceitos para "{product_name}"</p>
+            <p className="text-muted-foreground">3 ângulos × 2 opções visuais = 6 conceitos para "{productName}"</p>
           </div>
 
           <div className="space-y-6">
