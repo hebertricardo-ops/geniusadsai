@@ -316,7 +316,7 @@ const RegenerateCreative = () => {
 
           {/* Generate button */}
           <div className="flex items-center justify-between pt-2">
-            <CreditsBadge />
+            <CreditsBadge credits={credits?.credits_balance ?? 0} />
             <Button
               variant="hero"
               size="lg"
