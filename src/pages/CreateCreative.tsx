@@ -50,6 +50,8 @@ const CreateCreative = () => {
   const [selectedAngle, setSelectedAngle] = useState<number | null>(null);
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
+  const [format, setFormat] = useState("1:1");
+  const [generatingCreative, setGeneratingCreative] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -147,16 +149,103 @@ const CreateCreative = () => {
     }
   };
 
-  const handleGenerateCreative = () => {
-    if (selectedAngle === null || selectedVisual === null || !generatedAngles) return;
+  const handleGenerateCreative = async () => {
+    if (selectedAngle === null || selectedVisual === null || !generatedAngles || !user) return;
     const angle = generatedAngles[selectedAngle];
     const visual = angle.visual_options[selectedVisual];
-    toast({
-      title: "Gerando criativo...",
-      description: `Ângulo: ${angle.angle_name} | ${visual.option_label}`,
-    });
-    // TODO: integrate with image generation API
-    navigate("/dashboard");
+
+    if ((credits?.credits_balance ?? 0) < quantity) {
+      toast({ title: "Créditos insuficientes", description: "Você não tem créditos suficientes para gerar.", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingCreative(true);
+    try {
+      // 1. Get public URLs for uploaded images
+      const imageUrls: string[] = [];
+      for (const file of images) {
+        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("creative-uploads").getPublicUrl(path);
+        imageUrls.push(urlData.publicUrl);
+      }
+
+      // 2. Call generate-creative edge function
+      const { data: creativeData, error: creativeError } = await supabase.functions.invoke("generate-creative", {
+        body: {
+          image_urls: imageUrls,
+          product_name: productName,
+          promise,
+          pains,
+          benefits,
+          objections: objections || null,
+          headline: angle.headline,
+          body: angle.body,
+          cta: angle.cta,
+          visual_option: {
+            visual_description: visual.visual_description,
+            element_distribution: visual.element_distribution,
+            composition: visual.composition,
+            visual_hierarchy: visual.visual_hierarchy,
+            layout_style: visual.layout_style,
+            cta_highlight: visual.cta_highlight,
+          },
+          format,
+          quantity,
+        },
+      });
+      if (creativeError) throw creativeError;
+
+      const generatedImages = creativeData?.images || [];
+
+      // 3. Save each generated image
+      for (const img of generatedImages) {
+        const imgUrl = img.url || img;
+        await supabase.from("generated_creatives").insert({
+          user_id: user.id,
+          image_url: imgUrl,
+          copy_data: {
+            angle_name: angle.angle_name,
+            headline: angle.headline,
+            subheadline: angle.subheadline,
+            body: angle.body,
+            cta: angle.cta,
+            visual_option: visual.option_label,
+            format,
+          },
+          credits_used: 1,
+        });
+      }
+
+      // 4. Deduct credits
+      const usedCredits = generatedImages.length || quantity;
+      await supabase
+        .from("user_credits")
+        .update({
+          credits_balance: (credits?.credits_balance ?? 0) - usedCredits,
+          credits_used: (credits?.credits_used ?? 0) + usedCredits,
+        })
+        .eq("user_id", user.id);
+
+      await supabase.from("credit_transactions").insert({
+        user_id: user.id,
+        type: "usage",
+        amount: -usedCredits,
+        description: `Criativos gerados: ${productName} (${angle.angle_name})`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
+
+      toast({ title: "Criativos gerados!", description: `${generatedImages.length} criativo(s) gerado(s) com sucesso.` });
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Erro ao gerar criativo", description: err.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setGeneratingCreative(false);
+    }
   };
 
   const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
@@ -286,6 +375,34 @@ const CreateCreative = () => {
               ))}
             </div>
 
+            {/* Format selector */}
+            {selectedAngle !== null && selectedVisual !== null && (
+              <div className="space-y-4 animate-fade-in">
+                <h3 className="text-lg font-display font-semibold text-foreground text-center">Formato do Criativo</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-lg mx-auto">
+                  {[
+                    { value: "1:1", label: "1:1", desc: "Feed" },
+                    { value: "4:5", label: "4:5", desc: "Feed vertical" },
+                    { value: "9:16", label: "9:16", desc: "Stories/Reels" },
+                    { value: "16:9", label: "16:9", desc: "Landscape" },
+                  ].map((f) => (
+                    <div
+                      key={f.value}
+                      className={`rounded-xl p-4 border-2 cursor-pointer transition-all text-center ${
+                        format === f.value
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/40 bg-background/50"
+                      }`}
+                      onClick={() => setFormat(f.value)}
+                    >
+                      <span className="font-display font-bold text-foreground">{f.label}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-4 justify-center pt-4">
               <Button variant="outline" onClick={() => { setGeneratedAngles(null); setStep(0); setImages([]); }}>
@@ -294,9 +411,9 @@ const CreateCreative = () => {
               <Button
                 variant="hero"
                 onClick={handleGenerateCreative}
-                disabled={selectedAngle === null || selectedVisual === null}
+                disabled={selectedAngle === null || selectedVisual === null || generatingCreative}
               >
-                <Sparkles className="w-4 h-4" /> Gerar Criativo
+                {generatingCreative ? "Gerando..." : <><Sparkles className="w-4 h-4" /> Gerar Criativo</>}
               </Button>
             </div>
           </div>
@@ -312,8 +429,8 @@ const CreateCreative = () => {
                   </div>
                   <ImageUpload images={images} onImagesChange={setImages} />
                   <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Quantidade de criativos (1-5)</Label>
-                    <Input type="number" min={1} max={5} value={quantity} onChange={(e) => setQuantity(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))} className="bg-background/50 border-border w-24" />
+                    <Label className="text-sm text-muted-foreground">Quantidade de criativos (1-4)</Label>
+                    <Input type="number" min={1} max={4} value={quantity} onChange={(e) => setQuantity(Math.min(4, Math.max(1, parseInt(e.target.value) || 1)))} className="bg-background/50 border-border w-24" />
                     <p className="text-xs text-muted-foreground">Cada criativo consome 1 crédito</p>
                   </div>
                 </div>
