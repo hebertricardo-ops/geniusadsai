@@ -100,7 +100,7 @@ const RegenerateCreative = () => {
         .from("creative_requests")
         .insert({
           user_id: user.id,
-          productName,
+          product_name: productName,
           promise,
           pains,
           benefits,
