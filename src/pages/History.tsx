@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Image, Download, Eye, Clock, Loader2 } from "lucide-react";
+import { Image, Download, Eye, Clock, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const History = () => {
