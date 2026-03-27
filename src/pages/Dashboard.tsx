@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
-import CreditsBadge from "@/components/CreditsBadge";
 import { useNavigate } from "react-router-dom";
-import { Zap, Plus, Image, Clock, Sparkles, ArrowRight } from "lucide-react";
+import { Plus, Image, Clock, Sparkles, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +9,7 @@ import { format } from "date-fns";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const { data: credits } = useCredits();
 
   const { data: history = [] } = useQuery({
