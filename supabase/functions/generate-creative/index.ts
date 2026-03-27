@@ -177,22 +177,27 @@ serve(async (req) => {
     // If queued (async mode), poll for result
     if (falData.request_id && !falData.images) {
       const requestId = falData.request_id;
+      const statusUrl = falData.status_url;
+      const responseUrl = falData.response_url;
+
+      if (!statusUrl || !responseUrl) {
+        throw new Error(`fal.ai queue response missing polling URLs: ${JSON.stringify(falData).substring(0, 300)}`);
+      }
+
       console.log("fal.ai queued, polling request_id:", requestId);
 
       for (let i = 0; i < 60; i++) {
         await new Promise((r) => setTimeout(r, 2000));
 
-        const statusRes = await fetch(
-          `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}/status`,
-          { headers: { Authorization: `Key ${FAL_KEY}` } }
-        );
+        const statusRes = await fetch(statusUrl, {
+          headers: { Authorization: `Key ${FAL_KEY}` },
+        });
         const statusData = await safeJsonParse(statusRes, "fal.ai status poll");
 
         if (statusData.status === "COMPLETED") {
-          const resultRes = await fetch(
-            `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}`,
-            { headers: { Authorization: `Key ${FAL_KEY}` } }
-          );
+          const resultRes = await fetch(responseUrl, {
+            headers: { Authorization: `Key ${FAL_KEY}` },
+          });
           const result = await safeJsonParse(resultRes, "fal.ai result");
 
           return new Response(JSON.stringify({ images: result.images || [] }), {
