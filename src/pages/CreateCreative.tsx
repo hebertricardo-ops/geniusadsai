@@ -149,16 +149,103 @@ const CreateCreative = () => {
     }
   };
 
-  const handleGenerateCreative = () => {
-    if (selectedAngle === null || selectedVisual === null || !generatedAngles) return;
+  const handleGenerateCreative = async () => {
+    if (selectedAngle === null || selectedVisual === null || !generatedAngles || !user) return;
     const angle = generatedAngles[selectedAngle];
     const visual = angle.visual_options[selectedVisual];
-    toast({
-      title: "Gerando criativo...",
-      description: `Ângulo: ${angle.angle_name} | ${visual.option_label}`,
-    });
-    // TODO: integrate with image generation API
-    navigate("/dashboard");
+
+    if ((credits?.credits_balance ?? 0) < quantity) {
+      toast({ title: "Créditos insuficientes", description: "Você não tem créditos suficientes para gerar.", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingCreative(true);
+    try {
+      // 1. Get public URLs for uploaded images
+      const imageUrls: string[] = [];
+      for (const file of images) {
+        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("creative-uploads").getPublicUrl(path);
+        imageUrls.push(urlData.publicUrl);
+      }
+
+      // 2. Call generate-creative edge function
+      const { data: creativeData, error: creativeError } = await supabase.functions.invoke("generate-creative", {
+        body: {
+          image_urls: imageUrls,
+          product_name: productName,
+          promise,
+          pains,
+          benefits,
+          objections: objections || null,
+          headline: angle.headline,
+          body: angle.body,
+          cta: angle.cta,
+          visual_option: {
+            visual_description: visual.visual_description,
+            element_distribution: visual.element_distribution,
+            composition: visual.composition,
+            visual_hierarchy: visual.visual_hierarchy,
+            layout_style: visual.layout_style,
+            cta_highlight: visual.cta_highlight,
+          },
+          format,
+          quantity,
+        },
+      });
+      if (creativeError) throw creativeError;
+
+      const generatedImages = creativeData?.images || [];
+
+      // 3. Save each generated image
+      for (const img of generatedImages) {
+        const imgUrl = img.url || img;
+        await supabase.from("generated_creatives").insert({
+          user_id: user.id,
+          image_url: imgUrl,
+          copy_data: {
+            angle_name: angle.angle_name,
+            headline: angle.headline,
+            subheadline: angle.subheadline,
+            body: angle.body,
+            cta: angle.cta,
+            visual_option: visual.option_label,
+            format,
+          },
+          credits_used: 1,
+        });
+      }
+
+      // 4. Deduct credits
+      const usedCredits = generatedImages.length || quantity;
+      await supabase
+        .from("user_credits")
+        .update({
+          credits_balance: (credits?.credits_balance ?? 0) - usedCredits,
+          credits_used: (credits?.credits_used ?? 0) + usedCredits,
+        })
+        .eq("user_id", user.id);
+
+      await supabase.from("credit_transactions").insert({
+        user_id: user.id,
+        type: "usage",
+        amount: -usedCredits,
+        description: `Criativos gerados: ${productName} (${angle.angle_name})`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
+
+      toast({ title: "Criativos gerados!", description: `${generatedImages.length} criativo(s) gerado(s) com sucesso.` });
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Erro ao gerar criativo", description: err.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setGeneratingCreative(false);
+    }
   };
 
   const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
