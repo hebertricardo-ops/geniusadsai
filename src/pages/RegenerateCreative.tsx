@@ -295,28 +295,54 @@ const RegenerateCreative = () => {
             <ImageUpload images={images} onImagesChange={setImages} maxImages={4} />
           </div>
 
-          {/* Info report */}
+          {/* Editable fields */}
           <div className="gradient-card rounded-2xl border border-border p-6">
-            <h2 className="font-display text-foreground text-lg mb-5">📋 Resumo do Criativo</h2>
-            <div className="space-y-4">
-              {infoSections.map(({ icon: Icon, label, value }) => (
+            <h2 className="font-display text-foreground text-lg mb-5">📋 Dados do Criativo</h2>
+            <div className="space-y-5">
+              {editableFields.map(({ icon: Icon, label, value, onChange, type }) => (
                 <div key={label} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+                  <div className="mt-2 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
                     <Icon className="w-4 h-4 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
-                    <p className="text-sm text-foreground mt-0.5 whitespace-pre-line">{value}</p>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
+                    {type === "textarea" ? (
+                      <Textarea
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="text-sm min-h-[72px] bg-background/50"
+                      />
+                    ) : (
+                      <Input
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="text-sm bg-background/50"
+                      />
+                    )}
                   </div>
                 </div>
               ))}
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+                <div className="mt-2 flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
                   <Sparkles className="w-4 h-4 text-primary" />
                 </div>
-                <div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quantidade</span>
-                  <p className="text-sm text-foreground mt-0.5">{quantity} criativo{quantity > 1 ? "s" : ""}</p>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quantidade</Label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((n) => (
+                      <div
+                        key={n}
+                        className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all text-sm font-display ${
+                          quantity === n
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background/50 text-muted-foreground hover:border-primary/40"
+                        }`}
+                        onClick={() => setQuantity(n)}
+                      >
+                        {n}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
