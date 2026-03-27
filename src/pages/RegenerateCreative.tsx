@@ -33,7 +33,7 @@ interface CopyAngle {
 }
 
 interface PrefillData {
-  productName: string;
+  product_name: string;
   promise: string;
   pains: string;
   benefits: string;
