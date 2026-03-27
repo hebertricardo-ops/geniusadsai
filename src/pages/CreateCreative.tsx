@@ -202,12 +202,24 @@ const CreateCreative = () => {
 
       const generatedImages = creativeData?.images || [];
 
+      // 2b. Get or create a request_id for linking results
+      const { data: reqData } = await supabase
+        .from("creative_requests")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("product_name", productName)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      const requestId = reqData?.id;
+
       // 3. Save each generated image
       for (const img of generatedImages) {
         const imgUrl = img.url || img;
         await supabase.from("generated_creatives").insert({
           user_id: user.id,
           image_url: imgUrl,
+          request_id: requestId || null,
           copy_data: {
             angle_name: angle.angle_name,
             headline: angle.headline,
@@ -242,7 +254,11 @@ const CreateCreative = () => {
       queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
       toast({ title: "Criativos gerados!", description: `${generatedImages.length} criativo(s) gerado(s) com sucesso.` });
-      navigate("/dashboard");
+      if (requestId) {
+        navigate(`/results/${requestId}`);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err: any) {
       console.error(err);
       toast({ title: "Erro ao gerar criativo", description: err.message || "Tente novamente.", variant: "destructive" });

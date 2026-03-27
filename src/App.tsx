@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CreateCreative from "./pages/CreateCreative";
+import CreativeResults from "./pages/CreativeResults";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/create" element={<ProtectedRoute><CreateCreative /></ProtectedRoute>} />
+            <Route path="/results/:requestId" element={<ProtectedRoute><CreativeResults /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
