@@ -155,6 +155,7 @@ serve(async (req) => {
       headline,
       body,
       cta,
+      color_palette,
       visual_option,
     });
 
