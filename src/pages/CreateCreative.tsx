@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Stepper from "@/components/Stepper";
 import ImageUpload from "@/components/ImageUpload";
 import CreditsBadge from "@/components/CreditsBadge";
-import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye, Plus, X, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,6 +51,8 @@ const CreateCreative = () => {
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
+  const [colorPalette, setColorPalette] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState("#000000");
   const [generatingCreative, setGeneratingCreative] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -106,7 +108,7 @@ const CreateCreative = () => {
 
       // 3. Generate copy via edge function
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name: productName, promise, pains, benefits, objections, cta },
+        body: { product_name: productName, promise, pains, benefits, objections, cta, color_palette: colorPalette.length > 0 ? colorPalette : undefined },
       });
       if (copyError) throw copyError;
 
@@ -196,6 +198,7 @@ const CreateCreative = () => {
           },
           format,
           quantity,
+          color_palette: colorPalette.length > 0 ? colorPalette : undefined,
         },
       });
       if (creativeError) throw creativeError;
@@ -452,7 +455,54 @@ const CreateCreative = () => {
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">Cada criativo consome 1 crédito</p>
+                   <p className="text-xs text-muted-foreground">Cada criativo consome 1 crédito</p>
+                  </div>
+
+                  {/* Color Palette */}
+                  <div className="space-y-3">
+                    <Label className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Palette className="w-4 h-4" /> Paleta de cores (opcional, até 3)
+                    </Label>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {colorPalette.map((color, idx) => (
+                        <div key={idx} className="flex items-center gap-2 rounded-xl border-2 border-border bg-background/50 px-3 py-2">
+                          <div className="w-8 h-8 rounded-lg border border-border shadow-sm" style={{ backgroundColor: color }} />
+                          <span className="text-sm font-mono text-foreground uppercase">{color}</span>
+                          <button
+                            type="button"
+                            onClick={() => setColorPalette(colorPalette.filter((_, i) => i !== idx))}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {colorPalette.length < 3 && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={colorInput}
+                            onChange={(e) => setColorInput(e.target.value)}
+                            className="w-10 h-10 rounded-lg border-2 border-border cursor-pointer bg-transparent"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (!colorPalette.includes(colorInput)) {
+                                setColorPalette([...colorPalette, colorInput]);
+                              }
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-1" /> Adicionar
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {colorPalette.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Nenhuma cor selecionada — a IA escolherá automaticamente.</p>
+                    )}
                   </div>
                 </div>
               )}
