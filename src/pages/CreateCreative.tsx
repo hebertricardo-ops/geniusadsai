@@ -375,6 +375,34 @@ const CreateCreative = () => {
               ))}
             </div>
 
+            {/* Format selector */}
+            {selectedAngle !== null && selectedVisual !== null && (
+              <div className="space-y-4 animate-fade-in">
+                <h3 className="text-lg font-display font-semibold text-foreground text-center">Formato do Criativo</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-lg mx-auto">
+                  {[
+                    { value: "1:1", label: "1:1", desc: "Feed" },
+                    { value: "4:5", label: "4:5", desc: "Feed vertical" },
+                    { value: "9:16", label: "9:16", desc: "Stories/Reels" },
+                    { value: "16:9", label: "16:9", desc: "Landscape" },
+                  ].map((f) => (
+                    <div
+                      key={f.value}
+                      className={`rounded-xl p-4 border-2 cursor-pointer transition-all text-center ${
+                        format === f.value
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/40 bg-background/50"
+                      }`}
+                      onClick={() => setFormat(f.value)}
+                    >
+                      <span className="font-display font-bold text-foreground">{f.label}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-4 justify-center pt-4">
               <Button variant="outline" onClick={() => { setGeneratedAngles(null); setStep(0); setImages([]); }}>
@@ -383,9 +411,9 @@ const CreateCreative = () => {
               <Button
                 variant="hero"
                 onClick={handleGenerateCreative}
-                disabled={selectedAngle === null || selectedVisual === null}
+                disabled={selectedAngle === null || selectedVisual === null || generatingCreative}
               >
-                <Sparkles className="w-4 h-4" /> Gerar Criativo
+                {generatingCreative ? "Gerando..." : <><Sparkles className="w-4 h-4" /> Gerar Criativo</>}
               </Button>
             </div>
           </div>
