@@ -14,6 +14,7 @@ const FORMAT_TO_RATIO: Record<string, string> = {
 
 function buildPrompt(data: {
   product_name: string;
+  format: string;
   promise: string;
   pains: string;
   benefits: string;
@@ -30,37 +31,68 @@ function buildPrompt(data: {
     cta_highlight: string;
   };
 }): string {
-  return `Create a premium static ad creative for digital advertising.
+  const benefitsList = data.benefits
+    .split(/\r?\n|,|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-Product: ${data.product_name}
-Promise: ${data.promise}
-Pain points: ${data.pains}
-Benefits: ${data.benefits}
-${data.objections ? `Objections addressed: ${data.objections}` : ""}
+  const painList = data.pains
+    .split(/\r?\n|,|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-Headline: ${data.headline}
-Body copy: ${data.body}
-CTA: ${data.cta}
+  const objectionsList = (data.objections || "")
+    .split(/\r?\n|,|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-Visual direction: ${data.visual_option.visual_description}
-Layout style: ${data.visual_option.layout_style}
-Composition: ${data.visual_option.composition}
-Visual hierarchy: ${data.visual_option.visual_hierarchy}
-Element distribution: ${data.visual_option.element_distribution}
-CTA highlight: ${data.visual_option.cta_highlight}
-
-Rules:
-- Compose a clean, professional static ad creative
-- Use the provided reference images as base elements for the product
-- Maintain clear visual hierarchy and readability
-- Reserve appropriate areas for text overlays (headline, body, CTA)
-- Premium digital advertising atmosphere
-- Highlight product/offer/benefit prominently
-- Improve composition, contrast and visual impact
-- Avoid visual clutter — keep it polished
-- Conversion-oriented professional look
-- The creative should look like a real paid ad on Instagram/Facebook
-- Do NOT add any text to the image — only visual composition`;
+  return JSON.stringify(
+    {
+      tipo: "criativo_publicitario_estatico",
+      formato: data.format,
+      idioma_textos: "português do Brasil",
+      objetivo: "anuncio_meta_ads",
+      produto: {
+        nome: data.product_name,
+        promessa: data.promise,
+      },
+      conceito_criativo: {
+        angulo: data.headline,
+        dor_principal: painList,
+        beneficios: benefitsList,
+        objecoes_trabalhadas: objectionsList,
+      },
+      imagens_referencia: {
+        instrucao: "usar as imagens fornecidas como base principal da composição, preservando identidade visual e contexto do produto/oferta",
+      },
+      layout: {
+        estilo: data.visual_option.layout_style,
+        composicao: data.visual_option.composition,
+        hierarquia_visual: data.visual_option.visual_hierarchy,
+        distribuicao_elementos: data.visual_option.element_distribution,
+        destaque_cta: data.visual_option.cta_highlight,
+      },
+      textos: {
+        headline: data.headline,
+        subheadline: data.body,
+        cta: data.cta,
+      },
+      direcao_visual: {
+        descricao: data.visual_option.visual_description,
+        atmosfera: "clean premium, conversão alta, estética realista de anúncio para Instagram/Facebook",
+      },
+      instrucoes_extras: [
+        "manter design clean, premium e informativo",
+        "garantir legibilidade em telas mobile",
+        "priorizar contraste forte entre elementos principais e fundo",
+        "usar as imagens de referência como elementos centrais da composição",
+        "não adicionar texto renderizado na imagem; apenas compor o visual",
+        "evitar poluição visual e manter acabamento profissional",
+      ],
+    },
+    null,
+    2,
+  );
 }
 
 async function safeJsonParse(response: Response, label: string): Promise<any> {
@@ -106,6 +138,7 @@ serve(async (req) => {
 
     const prompt = buildPrompt({
       product_name,
+      format,
       promise,
       pains,
       benefits,
@@ -129,6 +162,7 @@ serve(async (req) => {
         prompt,
         aspect_ratio: aspectRatio,
         num_images: numImages,
+          resolution: "1K",
         output_format: "png",
         safety_tolerance: "4",
       }),
