@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Image, Download, Eye, Clock, Loader2 } from "lucide-react";
+import { Image, Download, Eye, Clock, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const History = () => {
@@ -127,16 +127,40 @@ const History = () => {
                       </span>
                     </div>
                   </div>
-                  {creatives.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    {creatives.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/results/${req.id}`)}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver detalhes
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/results/${req.id}`)}
+                      onClick={() =>
+                        navigate("/create", {
+                          state: {
+                            prefill: {
+                              product_name: req.product_name,
+                              promise: req.promise,
+                              pains: req.pains,
+                              benefits: req.benefits,
+                              objections: req.objections || "",
+                              cta: req.cta || "",
+                              quantity: req.quantity,
+                            },
+                          },
+                        })
+                      }
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver detalhes
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Gerar novos
                     </Button>
-                  )}
+                  </div>
                 </div>
 
                 {creatives.length > 0 ? (
