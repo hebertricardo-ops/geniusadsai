@@ -50,6 +50,8 @@ const CreateCreative = () => {
   const [selectedAngle, setSelectedAngle] = useState<number | null>(null);
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
+  const [format, setFormat] = useState("1:1");
+  const [generatingCreative, setGeneratingCreative] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
