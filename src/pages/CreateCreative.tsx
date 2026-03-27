@@ -108,7 +108,7 @@ const CreateCreative = () => {
 
       // 3. Generate copy via edge function
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name: productName, promise, pains, benefits, objections, cta },
+        body: { product_name: productName, promise, pains, benefits, objections, cta, color_palette: colorPalette.length > 0 ? colorPalette : undefined },
       });
       if (copyError) throw copyError;
 
