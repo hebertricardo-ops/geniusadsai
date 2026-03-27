@@ -167,8 +167,11 @@ const CreateCreative = () => {
         const path = `${user.id}/${Date.now()}-${file.name}`;
         const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from("creative-uploads").getPublicUrl(path);
-        imageUrls.push(urlData.publicUrl);
+        const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
+          .from("creative-uploads")
+          .createSignedUrl(path, 600); // 10 min expiry
+        if (signedUrlErr || !signedUrlData?.signedUrl) throw new Error("Failed to create signed URL");
+        imageUrls.push(signedUrlData.signedUrl);
       }
 
       // 2. Call generate-creative edge function
