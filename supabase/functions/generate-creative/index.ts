@@ -127,13 +127,22 @@ serve(async (req) => {
       }),
     });
 
+    const falResponseText = await falResponse.text();
+    console.log("fal.ai response status:", falResponse.status);
+    console.log("fal.ai response body (first 500 chars):", falResponseText.substring(0, 500));
+
     if (!falResponse.ok) {
-      const errText = await falResponse.text();
-      console.error("fal.ai error:", falResponse.status, errText);
-      throw new Error(`fal.ai error: ${falResponse.status}`);
+      console.error("fal.ai error:", falResponse.status, falResponseText);
+      throw new Error(`fal.ai error: ${falResponse.status} - ${falResponseText.substring(0, 200)}`);
     }
 
-    const falData = await falResponse.json();
+    let falData: any;
+    try {
+      falData = JSON.parse(falResponseText);
+    } catch (parseErr) {
+      console.error("Failed to parse fal.ai response as JSON:", falResponseText.substring(0, 500));
+      throw new Error("fal.ai returned invalid JSON response");
+    }
 
     // Check if queued (async mode)
     if (falData.request_id && !falData.images) {
