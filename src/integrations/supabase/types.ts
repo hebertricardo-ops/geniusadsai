@@ -14,7 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      creative_requests: {
+        Row: {
+          benefits: string
+          created_at: string
+          cta: string | null
+          id: string
+          objections: string | null
+          pains: string
+          product_name: string
+          promise: string
+          quantity: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          benefits: string
+          created_at?: string
+          cta?: string | null
+          id?: string
+          objections?: string | null
+          pains: string
+          product_name: string
+          promise: string
+          quantity?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          benefits?: string
+          created_at?: string
+          cta?: string | null
+          id?: string
+          objections?: string | null
+          pains?: string
+          product_name?: string
+          promise?: string
+          quantity?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generated_creatives: {
+        Row: {
+          copy_data: Json | null
+          created_at: string
+          credits_used: number
+          expires_at: string
+          id: string
+          image_url: string
+          request_id: string | null
+          user_id: string
+        }
+        Insert: {
+          copy_data?: Json | null
+          created_at?: string
+          credits_used?: number
+          expires_at?: string
+          id?: string
+          image_url: string
+          request_id?: string | null
+          user_id: string
+        }
+        Update: {
+          copy_data?: Json | null
+          created_at?: string
+          credits_used?: number
+          expires_at?: string
+          id?: string
+          image_url?: string
+          request_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_creatives_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "creative_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_credits: {
+        Row: {
+          created_at: string
+          credits_balance: number
+          credits_used: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_balance?: number
+          credits_used?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_balance?: number
+          credits_used?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
