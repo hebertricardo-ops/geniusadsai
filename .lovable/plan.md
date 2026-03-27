@@ -1,31 +1,84 @@
 
 
-# Plano: Integrar OpenAI API para geração de copies
+# Plano: Integrar geração de criativos via fal.ai nano-banana-pro/edit
 
 ## Resumo
 
-Vou configurar sua chave da OpenAI como um secret seguro no backend e atualizar a edge function `generate-copy` para chamar diretamente a API da OpenAI (`https://api.openai.com/v1/chat/completions`) usando o modelo `gpt-4o` (ou outro de sua preferência), em vez do Lovable AI Gateway.
+Criar uma edge function `generate-creative` que usa `@fal-ai/client` para gerar criativos estáticos via `fal-ai/nano-banana-pro/edit`. Adicionar seletor de formato e ajustar limite de quantidade para 4. O prompt visual será construído no backend com base em todos os dados do stepper + ângulo/opção visual selecionados.
 
 ## Etapas
 
-### 1. Solicitar a chave OPENAI_API_KEY
-- Usar a ferramenta de secrets para pedir que você insira sua chave de API da OpenAI
-- A chave fica armazenada de forma segura no backend, nunca exposta no frontend
+### 1. Solicitar FAL_KEY
+- Usar a ferramenta de secrets para pedir a chave da fal.ai
+- Necessária antes de qualquer implementação
 
-### 2. Atualizar a Edge Function `generate-copy`
-Alterações no arquivo `supabase/functions/generate-copy/index.ts`:
+### 2. Criar edge function `generate-creative`
+Novo arquivo: `supabase/functions/generate-creative/index.ts`
 
-- **Trocar a variável de ambiente** de `LOVABLE_API_KEY` para `OPENAI_API_KEY`
-- **Trocar o endpoint** de `https://ai.gateway.lovable.dev/v1/chat/completions` para `https://api.openai.com/v1/chat/completions`
-- **Trocar o modelo** de `google/gemini-3-flash-preview` para `gpt-4o` (melhor custo-benefício atual da OpenAI)
-- Manter toda a lógica de tool calling (structured output) e tratamento de erros intacta — a API da OpenAI usa o mesmo formato
+- Receber via POST: `image_urls[]`, dados de copy (produto, promessa, dores, benefícios, objeções, CTA), ângulo selecionado (headline, body, cta, visual_option), formato (`1:1`, `4:5`, `9:16`, `16:9`), quantidade (1-4)
+- Converter formato para dimensões em pixels (ex: `1:1` → 1024x1024, `4:5` → 1024x1280, `9:16` → 1024x1820, `16:9` → 1820x1024)
+- Construir prompt visual estruturado no backend combinando:
+  - Contexto do produto/oferta
+  - Copy do ângulo selecionado
+  - Orientações da opção visual (composição, hierarquia, layout, CTA highlight)
+  - Instruções fixas: criativo estático publicitário, limpo, legível, premium, com área para textos, sem poluição visual
+- Chamar `fal-ai/nano-banana-pro/edit` via `@fal-ai/client` com `num_images` = quantidade solicitada (máx 4)
+- Retornar URLs das imagens geradas
+
+### 3. Atualizar frontend (`CreateCreative.tsx`)
+
+**Seletor de formato:**
+- Adicionar estado `format` com opções: `1:1`, `4:5`, `9:16`, `16:9`
+- Exibir como radio buttons ou cards visuais após seleção de ângulo/opção visual, antes do botão "Gerar Criativo"
+
+**Limite de quantidade:**
+- Alterar `max` de 5 para 4 no input de quantidade (step 0)
+- Atualizar label e lógica de validação
+
+**Fluxo `handleGenerateCreative`:**
+1. Validar créditos suficientes (quantidade × 1 crédito)
+2. Obter URLs públicas das imagens já uploadadas no storage
+3. Chamar edge function `generate-creative` passando todos os dados
+4. Salvar imagens retornadas no bucket `generated-creatives`
+5. Registrar na tabela `generated_creatives` com `copy_data` do ângulo selecionado
+6. Deduzir créditos e registrar transação
+7. Exibir resultado ou redirecionar ao dashboard
 
 ### Detalhes técnicos
 
-A edge function continuará usando o mesmo formato de request (compatível OpenAI), então a única mudança real é:
-- URL do endpoint
-- Chave de autenticação
-- Nome do modelo
+**Prompt visual interno (construído no backend):**
+```text
+Create a premium static ad creative for digital advertising.
 
-O restante (prompts, tool calling, parsing de resposta, CORS) permanece idêntico. Nenhuma alteração no frontend é necessária.
+Product: [nome]
+Headline: [headline do ângulo]
+Body: [body do ângulo]  
+CTA: [cta do ângulo]
+
+Visual direction: [visual_description da opção]
+Layout: [layout_style]
+Composition: [composition]
+Visual hierarchy: [visual_hierarchy]
+Element distribution: [element_distribution]
+CTA highlight: [cta_highlight]
+
+Rules:
+- Compose a clean, professional static ad creative
+- Use the provided reference images as base elements
+- Maintain clear visual hierarchy and readability
+- Reserve appropriate areas for text overlays
+- Premium digital advertising atmosphere
+- Highlight product/offer/benefit
+- Improve composition, contrast and visual impact
+- Avoid visual clutter
+- Conversion-oriented professional look
+```
+
+**Dimensões por formato:**
+- `1:1` → 1024×1024
+- `4:5` → 1024×1280
+- `9:16` → 1024×1820
+- `16:9` → 1820×1024
+
+**Dependências:** `@fal-ai/client` (importado via esm.sh no Deno edge function)
 
