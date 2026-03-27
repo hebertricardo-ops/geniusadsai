@@ -102,7 +102,7 @@ const Index = () => {
               <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center mx-auto shadow-glow font-display text-primary-foreground">
                 {step}
               </div>
-              <h3 className="font-display font-semibold text-foreground">{title}</h3>
+              <h3 className="font-display text-foreground">{title}</h3>
               <p className="text-sm text-muted-foreground">{desc}</p>
             </div>
           ))}
