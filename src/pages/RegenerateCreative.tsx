@@ -33,7 +33,7 @@ interface CopyAngle {
 }
 
 interface PrefillData {
-  product_name: string;
+  productName: string;
   promise: string;
   pains: string;
   benefits: string;
@@ -59,7 +59,7 @@ const RegenerateCreative = () => {
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
   const [generatingCreative, setGeneratingCreative] = useState(false);
-  const [productName, setProductName] = useState(prefill?.product_name ?? "");
+  const [productName, setProductName] = useState(prefill?.productName ?? "");
   const [promise, setPromise] = useState(prefill?.promise ?? "");
   const [pains, setPains] = useState(prefill?.pains ?? "");
   const [benefits, setBenefits] = useState(prefill?.benefits ?? "");
@@ -100,7 +100,7 @@ const RegenerateCreative = () => {
         .from("creative_requests")
         .insert({
           user_id: user.id,
-          product_name,
+          productName,
           promise,
           pains,
           benefits,
@@ -114,7 +114,7 @@ const RegenerateCreative = () => {
       if (reqError) throw reqError;
 
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name, promise, pains, benefits, objections, cta },
+        body: { productName, promise, pains, benefits, objections, cta },
       });
       if (copyError) throw copyError;
 
@@ -134,7 +134,7 @@ const RegenerateCreative = () => {
         user_id: user.id,
         type: "usage",
         amount: -quantity,
-        description: `Regeneração de criativos: ${product_name}`,
+        description: `Regeneração de criativos: ${productName}`,
       });
 
       await supabase
@@ -181,7 +181,7 @@ const RegenerateCreative = () => {
       const { data: creativeData, error: creativeError } = await supabase.functions.invoke("generate-creative", {
         body: {
           image_urls: imageUrls,
-          product_name,
+          productName,
           promise,
           pains,
           benefits,
@@ -209,7 +209,7 @@ const RegenerateCreative = () => {
         .from("creative_requests")
         .select("id")
         .eq("user_id", user.id)
-        .eq("product_name", product_name)
+        .eq("productName", productName)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -247,7 +247,7 @@ const RegenerateCreative = () => {
         user_id: user.id,
         type: "usage",
         amount: -usedCredits,
-        description: `Criativos regenerados: ${product_name} (${angle.angle_name})`,
+        description: `Criativos regenerados: ${productName} (${angle.angle_name})`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["credits"] });
@@ -270,7 +270,7 @@ const RegenerateCreative = () => {
   const angleLabels = ["🔴 Dor Principal", "🟢 Transformação", "🟡 Quebra de Objeção"];
 
   const infoSections = [
-    { icon: Package, label: "Produto", value: product_name },
+    { icon: Package, label: "Produto", value: productName },
     { icon: Target, label: "Promessa", value: promise },
     { icon: ShieldAlert, label: "Dores", value: pains },
     { icon: Sparkles, label: "Benefícios", value: benefits },
@@ -348,7 +348,7 @@ const RegenerateCreative = () => {
         <div className="space-y-8 animate-fade-in">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-display text-foreground mb-2">Escolha seu Ângulo e Conceito Visual</h2>
-            <p className="text-muted-foreground">3 ângulos × 2 opções visuais = 6 conceitos para "{product_name}"</p>
+            <p className="text-muted-foreground">3 ângulos × 2 opções visuais = 6 conceitos para "{productName}"</p>
           </div>
 
           <div className="space-y-6">
