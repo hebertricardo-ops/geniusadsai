@@ -153,6 +153,11 @@ const CreativeResults = () => {
                     </div>
                   )}
                 </div>
+                <div className="mt-5 flex justify-center">
+                  <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={!requestData} className="w-full sm:w-auto">
+                    <RefreshCw className="w-4 h-4" /> Gerar novo com mesmos dados
+                  </Button>
+                </div>
               </div>
             )}
 
