@@ -51,8 +51,7 @@ const CreateCreative = () => {
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
-  const [colorPalette, setColorPalette] = useState<string[]>([]);
-  const [colorInput, setColorInput] = useState("#000000");
+  const [creativeStyle, setCreativeStyle] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generatingCreative, setGeneratingCreative] = useState(false);
   const navigate = useNavigate();
