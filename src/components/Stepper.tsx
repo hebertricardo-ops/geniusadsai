@@ -17,7 +17,7 @@ const Stepper = ({ steps, currentStep }: StepperProps) => {
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center text-sm font-display font-semibold transition-all duration-300",
+                  "w-9 h-9 rounded-full flex items-center justify-center text-sm "w-9 h-9 rounded-full flex items-center justify-center text-sm font-display transition-all duration-300", duration-300",
                   isCompleted && "gradient-primary text-primary-foreground shadow-glow",
                   isCurrent && "border-2 border-primary text-primary animate-pulse-glow",
                   !isCompleted && !isCurrent && "border border-border text-muted-foreground"
