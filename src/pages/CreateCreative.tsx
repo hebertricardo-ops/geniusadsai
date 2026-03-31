@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Stepper from "@/components/Stepper";
 import ImageUpload from "@/components/ImageUpload";
 import CreditsBadge from "@/components/CreditsBadge";
-import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye, Plus, X, Palette } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Zap, Check, Eye, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,8 +51,7 @@ const CreateCreative = () => {
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
   const [format, setFormat] = useState("1:1");
-  const [colorPalette, setColorPalette] = useState<string[]>([]);
-  const [colorInput, setColorInput] = useState("#000000");
+  const [creativeStyle, setCreativeStyle] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generatingCreative, setGeneratingCreative] = useState(false);
   const navigate = useNavigate();
@@ -109,7 +108,7 @@ const CreateCreative = () => {
 
       // 3. Generate copy via edge function
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name: productName, promise, pains, benefits, objections, cta, color_palette: colorPalette.length > 0 ? colorPalette : undefined },
+        body: { product_name: productName, promise, pains, benefits, objections, cta, creative_style: creativeStyle || undefined },
       });
       if (copyError) throw copyError;
 
@@ -199,7 +198,7 @@ const CreateCreative = () => {
           },
           format,
           quantity,
-          color_palette: colorPalette.length > 0 ? colorPalette : undefined,
+          creative_style: creativeStyle || undefined,
           additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
@@ -460,50 +459,38 @@ const CreateCreative = () => {
                    <p className="text-xs text-muted-foreground">Cada criativo consome 1 crédito</p>
                   </div>
 
-                  {/* Color Palette */}
+                  {/* Estilo Principal do Criativo */}
                   <div className="space-y-3">
                     <Label className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Palette className="w-4 h-4" /> Paleta de cores (opcional, até 3)
+                      <Palette className="w-4 h-4" /> Estilo Principal do Criativo (opcional)
                     </Label>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {colorPalette.map((color, idx) => (
-                        <div key={idx} className="flex items-center gap-2 rounded-xl border-2 border-border bg-background/50 px-3 py-2">
-                          <div className="w-8 h-8 rounded-lg border border-border shadow-sm" style={{ backgroundColor: color }} />
-                          <span className="text-sm font-mono text-foreground uppercase">{color}</span>
-                          <button
-                            type="button"
-                            onClick={() => setColorPalette(colorPalette.filter((_, i) => i !== idx))}
-                            className="text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: "dark", label: "Dark / Escuro" },
+                        { value: "light", label: "Claro / Light" },
+                        { value: "clean", label: "Clean / Minimalista" },
+                        { value: "premium", label: "Premium / Luxuoso" },
+                        { value: "playful", label: "Infantil / Lúdico" },
+                        { value: "tech", label: "Tecnológico / Futurista" },
+                        { value: "vibrant", label: "Vibrante / Chamativo" },
+                        { value: "corporate", label: "Corporativo / Profissional" },
+                      ].map((style) => (
+                        <button
+                          key={style.value}
+                          type="button"
+                          onClick={() => setCreativeStyle(creativeStyle === style.value ? "" : style.value)}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                            creativeStyle === style.value
+                              ? "border-primary bg-primary/10 text-primary shadow-md scale-105"
+                              : "border-border bg-background/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                          }`}
+                        >
+                          {style.label}
+                        </button>
                       ))}
-                      {colorPalette.length < 3 && (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={colorInput}
-                            onChange={(e) => setColorInput(e.target.value)}
-                            className="w-10 h-10 rounded-lg border-2 border-border cursor-pointer bg-transparent"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (!colorPalette.includes(colorInput)) {
-                                setColorPalette([...colorPalette, colorInput]);
-                              }
-                            }}
-                          >
-                            <Plus className="w-4 h-4 mr-1" /> Adicionar
-                          </Button>
-                        </div>
-                      )}
                     </div>
-                    {colorPalette.length === 0 && (
-                      <p className="text-xs text-muted-foreground">Nenhuma cor selecionada — a IA escolherá automaticamente.</p>
+                    {!creativeStyle && (
+                      <p className="text-xs text-muted-foreground">Nenhum estilo selecionado — a IA escolherá automaticamente.</p>
                     )}
                   </div>
                 </div>
