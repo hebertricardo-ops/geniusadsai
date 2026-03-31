@@ -79,9 +79,10 @@ const Dashboard = () => {
               <h1 className="text-3xl md:text-4xl font-display text-foreground mb-1">
                 Olá, {displayName} 👋
               </h1>
-            <p className="text-xl md:text-2xl text-white">
-              Pronto para criar anúncios que convertem?
-            </p>
+              <p className="text-xl md:text-2xl text-white">
+                Pronto para criar anúncios que convertem?
+              </p>
+            </div>
           </div>
           <Button variant="hero" size="lg" onClick={() => navigate("/create")}>
             <Plus className="w-5 h-5" />
