@@ -156,7 +156,7 @@ const Profile = () => {
 
         {/* Info */}
         <div className="gradient-card rounded-2xl border border-border shadow-card p-6 animate-fade-in">
-          <h3 className="font-display font-semibold text-foreground mb-4">Informações</h3>
+          <h3 className="<h3 className="font-display text-foreground mb-4">Informações</h3></h3>
           <div className="space-y-4">
             <div>
               <Label htmlFor="name" className="text-muted-foreground">Nome</Label>
