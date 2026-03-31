@@ -143,6 +143,7 @@ serve(async (req) => {
       format,
       quantity,
       color_palette,
+      additional_instructions,
     } = await req.json();
 
     if (!image_urls?.length) throw new Error("At least one image is required");
