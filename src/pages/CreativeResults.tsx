@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2 } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2, RefreshCw } from "lucide-react";
 
 const CreativeResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
@@ -25,7 +25,38 @@ const CreativeResults = () => {
     enabled: !!requestId && !!user,
   });
 
+  const { data: requestData } = useQuery({
+    queryKey: ["creative-request", requestId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("creative_requests")
+        .select("*")
+        .eq("id", requestId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!requestId && !!user,
+  });
+
   const copyData = creatives[0]?.copy_data as Record<string, any> | null;
+
+  const handleRegenerate = () => {
+    if (!requestData) return;
+    navigate("/regenerate", {
+      state: {
+        prefill: {
+          product_name: requestData.product_name,
+          promise: requestData.promise,
+          pains: requestData.pains,
+          benefits: requestData.benefits,
+          objections: requestData.objections ?? "",
+          cta: requestData.cta ?? "",
+          quantity: requestData.quantity,
+        },
+      },
+    });
+  };
 
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
@@ -81,7 +112,12 @@ const CreativeResults = () => {
             {/* Summary card */}
             {copyData && (
               <div className="gradient-card rounded-2xl p-6 border border-border shadow-card">
-                <h3 className="font-display text-foreground mb-4 text-lg">Resumo da Geração</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-foreground text-lg">Resumo da Geração</h3>
+                  <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={!requestData}>
+                    <RefreshCw className="w-4 h-4" /> Gerar novo com mesmos dados
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                   {copyData.angle_name && (
                     <div>
