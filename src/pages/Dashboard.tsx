@@ -12,7 +12,21 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { data: credits } = useCredits();
 
-  const displayName = user?.user_metadata?.name || user?.email?.split("@")[0] || "usuário";
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "usuário";
 
   const { data: history = [] } = useQuery({
     queryKey: ["creative-requests", user?.id],
