@@ -116,7 +116,7 @@ const RegenerateCreative = () => {
       if (reqError) throw reqError;
 
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name: productName, promise, pains, benefits, objections, cta },
+        body: { product_name: productName, promise, pains, benefits, objections, cta, creative_style: creativeStyle || undefined },
       });
       if (copyError) throw copyError;
 
