@@ -1,35 +1,62 @@
 
 
-## Plano: Histórico Recente em Grid Portfolio com Carrossel
+## Plano: Migrar geração de imagens para Vertex AI com `gemini-3-pro-image-preview`
 
-### Resumo
-Transformar a seção "Histórico recente" de uma lista vertical para um layout de grid estilo portfólio (3 colunas × 2 linhas), buscando dados da tabela `generated_creatives` (que tem `image_url`) em vez de `creative_requests`. Adicionar animação de carrossel usando Embla (já disponível no projeto via `carousel.tsx`).
+### Contexto
+O arquivo enviado é uma **service account** do Google Cloud (projeto `genius-ads`). Para usar Vertex AI com service account, a edge function precisa:
+1. Gerar um JWT assinado com a chave privada
+2. Trocar o JWT por um access token OAuth2
+3. Chamar a API Vertex AI com o access token
 
-### Alterações em `src/pages/Dashboard.tsx`
+### Passo 1 — Armazenar credenciais como secret
+- Salvar o conteúdo completo do JSON da service account como uma secret `GOOGLE_SERVICE_ACCOUNT_JSON` no projeto.
 
-**1. Nova query — buscar os 6 últimos criativos com imagem**
-- Substituir a query `history` (que busca de `creative_requests`) por uma query em `generated_creatives` com join em `creative_requests` para obter `product_name`.
-- Query: `generated_creatives` → `select("*, creative_requests(product_name)")` → `order("created_at", desc)` → `limit(6)`.
+### Passo 2 — Reescrever `supabase/functions/generate-creative/index.ts`
 
-**2. Layout grid portfólio**
-- Substituir o bloco de lista (`divide-y`) por um grid `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` com `gap-4` dentro de um container com `p-6`.
-- Cada card será um componente estilizado com:
-  - Imagem do criativo (`image_url`) com `aspect-ratio 4/5`, `object-cover`, `rounded-xl`, efeito hover com scale e overlay.
-  - Overlay gradiente na parte inferior com: nome do produto, data (`dd/MM/yyyy`), créditos usados.
-  - Sem badge de status.
-  - Animação `animate-fade-in` com delay escalonado por índice.
+**Autenticação via Service Account:**
+- Parsear o JSON da secret para extrair `client_email` e `private_key`
+- Gerar JWT com header `RS256`, claims `iss`, `sub`, `aud` (token endpoint), `scope` (`https://www.googleapis.com/auth/cloud-platform`), `iat`, `exp`
+- Assinar o JWT usando `crypto.subtle.importKey` + `crypto.subtle.sign` (Web Crypto API nativa do Deno)
+- Trocar o JWT por access token via `POST https://oauth2.googleapis.com/token`
 
-**3. Carrossel (opcional, para mobile)**
-- No mobile (1 coluna), usar os componentes `Carousel`, `CarouselContent`, `CarouselItem` já existentes para permitir swipe entre os 6 cards.
-- No desktop, exibir o grid estático 3×2 (sem carrossel).
+**Chamada Vertex AI:**
+- Endpoint: `https://us-central1-aiplatform.googleapis.com/v1/projects/genius-ads/locations/us-central1/publishers/google/models/gemini-3-pro-image-preview:generateContent`
+- Header: `Authorization: Bearer ${accessToken}`
+- Payload:
+```json
+{
+  "contents": [{
+    "parts": [
+      { "text": "<prompt>" },
+      { "inlineData": { "mimeType": "image/png", "data": "<base64>" } }
+    ]
+  }],
+  "generationConfig": {
+    "responseModalities": ["IMAGE"],
+    "imageConfig": { "aspectRatio": "1:1" }
+  }
+}
+```
 
-**4. Imports adicionais**
-- Adicionar imports de `Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext` de `@/components/ui/carousel`.
-- Remover import de `Image` do lucide (não mais usado como ícone placeholder).
+**Imagens de referência:**
+- Fetch cada URL assinada → arrayBuffer → base64 → enviar como `inlineData`
 
-### Arquivo modificado
+**Múltiplas imagens:**
+- Gemini gera 1 imagem por chamada → `Promise.all` para `quantity` chamadas paralelas
+
+**Resposta:**
+- Extrair `inlineData.data` (base64) da resposta
+- Upload como PNG no bucket `generated-creatives` via Supabase Storage (service role)
+- Retornar `{ images: [{ url: "..." }] }` — mesmo contrato atual
+
+**Manter `buildPrompt` intacta** — sem alterações na lógica do prompt.
+
+### Sem alterações no frontend
+O contrato de resposta é idêntico — `CreateCreative.tsx` e `RegenerateCreative.tsx` continuam funcionando sem mudanças.
+
+### Arquivos modificados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/pages/Dashboard.tsx` | Nova query `generated_creatives`, grid portfólio 3×2, carrossel mobile |
+| `supabase/functions/generate-creative/index.ts` | Substituir Fal.ai por Vertex AI + service account auth |
 
