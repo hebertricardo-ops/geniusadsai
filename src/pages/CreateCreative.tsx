@@ -586,7 +586,7 @@ const CreateCreative = () => {
                     />
                   </div>
                   <div className="bg-background/30 rounded-xl p-5 border border-border space-y-3">
-                    <h3 className="<h3 className="font-display text-sm text-foreground">Resumo</h3></h3>
+                    <h3 className="font-display text-sm text-foreground">Resumo</h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div><span className="text-muted-foreground">Imagens:</span> <span className="text-foreground">{images.length}</span></div>
                       <div><span className="text-muted-foreground">Criativos:</span> <span className="text-foreground">{quantity}</span></div>
