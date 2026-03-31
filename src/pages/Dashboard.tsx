@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Plus, Image, Clock, Sparkles, ArrowRight } from "lucide-react";
+import { Plus, Image, Sparkles, ArrowRight, Lightbulb } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: credits } = useCredits();
+
+  const displayName = user?.user_metadata?.name || user?.email?.split("@")[0] || "usuário";
 
   const { data: history = [] } = useQuery({
     queryKey: ["creative-requests", user?.id],
@@ -40,14 +42,14 @@ const Dashboard = () => {
 
   return (
     <div>
-
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-display text-foreground mb-3">
-            Gere criativos que <span className="text-gradient">convertem</span>
+        {/* Header alinhado à esquerda */}
+        <div className="mb-10 animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-display text-foreground mb-2">
+            Olá, {displayName} 👋
           </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto mb-8">
-            Crie anúncios estáticos profissionais com IA em segundos.
+          <p className="text-xl md:text-2xl text-white mb-6">
+            Pronto para criar anúncios que convertem?
           </p>
           <Button variant="hero" size="lg" onClick={() => navigate("/create")}>
             <Plus className="w-5 h-5" />
@@ -56,11 +58,11 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        {/* Stats cards — 2 colunas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {[
             { icon: Sparkles, label: "Créditos disponíveis", value: String(credits?.credits_balance ?? 0), color: "text-primary" },
             { icon: Image, label: "Criativos gerados", value: String(totalCreatives), color: "text-foreground" },
-            { icon: Clock, label: "Expira em", value: "7 dias", color: "text-muted-foreground" },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="gradient-card rounded-xl p-5 border border-border shadow-card animate-fade-in">
               <div className="flex items-center gap-3 mb-2">
@@ -72,10 +74,22 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Card Dica Pro */}
+        <div className="rounded-xl p-5 border border-primary/40 bg-primary/5 mb-10 animate-fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <Lightbulb className="w-5 h-5 text-primary" />
+            <span className="font-display text-primary">Dica Pro</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Seja específico nas dores do seu cliente. A IA gera melhores ângulos quando entende o problema real.
+          </p>
+        </div>
+
+        {/* Histórico */}
         <div className="gradient-card rounded-2xl border border-border shadow-card overflow-hidden">
           <div className="p-6 border-b border-border">
             <h2 className="text-lg font-display text-foreground">Histórico recente</h2>
-            <p className="text-sm text-muted-foreground">Seus criativos ficam disponíveis por 7 dias</p>
+            <p className="text-sm text-muted-foreground">Seus últimos criativos gerados</p>
           </div>
           <div className="divide-y divide-border">
             {history.length === 0 ? (
