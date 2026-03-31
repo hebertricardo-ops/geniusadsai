@@ -78,7 +78,7 @@ const History = () => {
       {requests.length === 0 ? (
         <div className="gradient-card rounded-2xl border border-border p-12 text-center animate-fade-in">
           <Image className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-lg font-display font-semibold text-foreground mb-2">
+          <h2 className="text-lg font-display text-foreground mb-2">
             Nenhum criativo gerado ainda
           </h2>
           <p className="text-muted-foreground mb-6">

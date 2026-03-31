@@ -463,7 +463,7 @@ const RegenerateCreative = () => {
                       >
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="font-display font-semibold text-sm text-foreground">
+                            <span className="font-display text-sm text-foreground">
                               {visual.option_label}
                             </span>
                             {selectedAngle === angleIdx && selectedVisual === visIdx && (
@@ -504,7 +504,7 @@ const RegenerateCreative = () => {
 
           {selectedAngle !== null && selectedVisual !== null && (
             <div className="space-y-4 animate-fade-in">
-              <h3 className="text-lg font-display font-semibold text-foreground text-center">Formato do Criativo</h3>
+              <h3 className="text-lg font-display text-foreground text-center">Formato do Criativo</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-lg mx-auto">
                 {[
                   { value: "1:1", label: "1:1", desc: "Feed" },

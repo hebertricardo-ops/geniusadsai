@@ -347,7 +347,7 @@ const CreateCreative = () => {
                         >
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="font-display font-semibold text-sm text-foreground">
+                              <span className="font-display text-sm text-foreground">
                                 {visual.option_label}
                               </span>
                               {selectedAngle === angleIdx && selectedVisual === visIdx && (
@@ -389,7 +389,7 @@ const CreateCreative = () => {
             {/* Format selector */}
             {selectedAngle !== null && selectedVisual !== null && (
               <div className="space-y-4 animate-fade-in">
-                <h3 className="text-lg font-display font-semibold text-foreground text-center">Formato do Criativo</h3>
+                <h3 className="text-lg font-display text-foreground text-center">Formato do Criativo</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-lg mx-auto">
                   {[
                     { value: "1:1", label: "1:1", desc: "Feed" },
@@ -586,7 +586,7 @@ const CreateCreative = () => {
                     />
                   </div>
                   <div className="bg-background/30 rounded-xl p-5 border border-border space-y-3">
-                    <h3 className="font-display font-semibold text-sm text-foreground">Resumo</h3>
+                    <h3 className="font-display text-sm text-foreground">Resumo</h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div><span className="text-muted-foreground">Imagens:</span> <span className="text-foreground">{images.length}</span></div>
                       <div><span className="text-muted-foreground">Criativos:</span> <span className="text-foreground">{quantity}</span></div>
