@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Plus, Image, Sparkles, ArrowRight, Lightbulb } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,12 @@ const Dashboard = () => {
   });
 
   const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "usuário";
+  const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  // Try to get avatar from storage
+  const avatarUrl = user
+    ? supabase.storage.from("creative-uploads").getPublicUrl(`${user.id}/avatar.png`).data.publicUrl
+    : null;
 
   const { data: history = [] } = useQuery({
     queryKey: ["creative-requests", user?.id],
