@@ -439,7 +439,7 @@ const CreateCreative = () => {
                   </div>
                   <ImageUpload images={images} onImagesChange={setImages} />
                   <div className="space-y-3">
-                    <Label className="text-sm text-muted-foreground">Quantidade de criativos</Label>
+                    <h2 className="text-xl font-display text-foreground">Quantidade de criativos</h2>
                     <div className="flex gap-3">
                       {[1, 2, 3, 4].map((num) => (
                         <button
