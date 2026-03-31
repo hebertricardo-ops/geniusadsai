@@ -43,14 +43,16 @@ const Dashboard = () => {
   return (
     <div>
       <div className="max-w-5xl mx-auto px-4 py-10">
-        {/* Header alinhado à esquerda */}
-        <div className="mb-10 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-display text-foreground mb-2">
-            Olá, {displayName} 👋
-          </h1>
-          <p className="text-xl md:text-2xl text-white mb-6">
-            Pronto para criar anúncios que convertem?
-          </p>
+        {/* Header */}
+        <div className="mb-10 animate-fade-in flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-display text-foreground mb-2">
+              Olá, {displayName} 👋
+            </h1>
+            <p className="text-xl md:text-2xl text-white">
+              Pronto para criar anúncios que convertem?
+            </p>
+          </div>
           <Button variant="hero" size="lg" onClick={() => navigate("/create")}>
             <Plus className="w-5 h-5" />
             Novo Criativo
