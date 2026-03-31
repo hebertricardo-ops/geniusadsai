@@ -554,7 +554,24 @@ const CreateCreative = () => {
                     <h2 className="text-xl font-display text-foreground mb-2">Call to Action</h2>
                     <p className="text-muted-foreground text-sm">Defina o CTA do seu anúncio (opcional)</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <Label className="text-sm text-muted-foreground">Sugestões de CTA</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Clique em Saiba Mais", "Fale Conosco", "Assistir Mais", "Cadastre-se Agora", "Obter Oferta"].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => setCta(suggestion)}
+                          className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                            cta === suggestion
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background/50 text-muted-foreground border-border hover:border-primary/50"
+                          }`}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
                     <Label className="text-sm text-muted-foreground">CTA personalizado</Label>
                     <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder='Ex: "Compre agora com 30% OFF"' className="bg-background/50 border-border" />
                   </div>
