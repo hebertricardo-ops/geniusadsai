@@ -66,6 +66,7 @@ const RegenerateCreative = () => {
   const [objections, setObjections] = useState(prefill?.objections ?? "");
   const [cta, setCta] = useState(prefill?.cta ?? "");
   const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
+  const [additionalInstructions, setAdditionalInstructions] = useState("");
 
   if (!prefill) {
     return (
