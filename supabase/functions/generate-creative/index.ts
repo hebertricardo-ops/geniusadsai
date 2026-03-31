@@ -23,6 +23,7 @@ function buildPrompt(data: {
   body: string;
   cta: string;
   color_palette?: string[];
+  additional_instructions?: string;
   visual_option: {
     visual_description: string;
     element_distribution: string;
