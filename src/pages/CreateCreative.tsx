@@ -53,6 +53,7 @@ const CreateCreative = () => {
   const [format, setFormat] = useState("1:1");
   const [colorPalette, setColorPalette] = useState<string[]>([]);
   const [colorInput, setColorInput] = useState("#000000");
+  const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generatingCreative, setGeneratingCreative] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -199,6 +200,7 @@ const CreateCreative = () => {
           format,
           quantity,
           color_palette: colorPalette.length > 0 ? colorPalette : undefined,
+          additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
       if (creativeError) throw creativeError;
@@ -555,6 +557,16 @@ const CreateCreative = () => {
                   <div className="space-y-2">
                     <Label className="text-sm text-muted-foreground">CTA personalizado</Label>
                     <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder='Ex: "Compre agora com 30% OFF"' className="bg-background/50 border-border" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Orientações adicionais (opcional)</Label>
+                    <Textarea
+                      value={additionalInstructions}
+                      onChange={(e) => setAdditionalInstructions(e.target.value)}
+                      placeholder="Ex: Usar a imagem do produto como elemento central, incluir selo de garantia, adicionar efeito de brilho no fundo..."
+                      className="bg-background/50 border-border resize-none"
+                      rows={3}
+                    />
                   </div>
                   <div className="bg-background/30 rounded-xl p-5 border border-border space-y-3">
                     <h3 className="font-display font-semibold text-sm text-foreground">Resumo</h3>

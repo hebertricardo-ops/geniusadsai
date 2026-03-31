@@ -23,6 +23,7 @@ function buildPrompt(data: {
   body: string;
   cta: string;
   color_palette?: string[];
+  additional_instructions?: string;
   visual_option: {
     visual_description: string;
     element_distribution: string;
@@ -90,12 +91,17 @@ function buildPrompt(data: {
         "usar as imagens de referência como elementos centrais da composição",
         "não adicionar texto renderizado na imagem; apenas compor o visual",
         "evitar poluição visual e manter acabamento profissional",
+        "criar background elaborado com elementos visuais que façam referência ao produto e nicho, evitar fundos de cor única — usar texturas, gradientes, padrões ou elementos contextuais",
+        "incluir efeitos tecnológicos como linhas geométricas finas, gradientes sutis, elementos em transparência, overlays e formas abstratas que deem um visual moderno e tecnológico ao criativo",
         ...(data.color_palette && data.color_palette.length > 0
           ? [`utilizar a seguinte paleta de cores como base do design: ${data.color_palette.join(", ")}`]
           : []),
         data.visual_option.thematic_elements
           ? `incluir elementos visuais temáticos alinhados ao nicho: ${data.visual_option.thematic_elements}`
           : "incluir ícones ou elementos visuais que reforcem a identidade do nicho do produto",
+        ...(data.additional_instructions
+          ? [`orientações adicionais do usuário: ${data.additional_instructions}`]
+          : []),
       ],
     },
     null,
@@ -137,6 +143,7 @@ serve(async (req) => {
       format,
       quantity,
       color_palette,
+      additional_instructions,
     } = await req.json();
 
     if (!image_urls?.length) throw new Error("At least one image is required");
@@ -156,6 +163,7 @@ serve(async (req) => {
       body,
       cta,
       color_palette,
+      additional_instructions,
       visual_option,
     });
 

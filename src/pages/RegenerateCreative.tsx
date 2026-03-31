@@ -66,6 +66,7 @@ const RegenerateCreative = () => {
   const [objections, setObjections] = useState(prefill?.objections ?? "");
   const [cta, setCta] = useState(prefill?.cta ?? "");
   const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
+  const [additionalInstructions, setAdditionalInstructions] = useState("");
 
   if (!prefill) {
     return (
@@ -199,6 +200,7 @@ const RegenerateCreative = () => {
           },
           format,
           quantity,
+          additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
       if (creativeError) throw creativeError;
@@ -276,6 +278,7 @@ const RegenerateCreative = () => {
     { icon: Sparkles, label: "Benefícios", value: benefits, onChange: setBenefits, type: "textarea" as const },
     { icon: MessageSquare, label: "Objeções", value: objections, onChange: setObjections, type: "textarea" as const },
     { icon: Zap, label: "CTA", value: cta, onChange: setCta, type: "input" as const },
+    { icon: MessageSquare, label: "Orientações adicionais", value: additionalInstructions, onChange: setAdditionalInstructions, type: "textarea" as const },
   ];
 
   return (
