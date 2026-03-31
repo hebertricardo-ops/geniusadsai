@@ -67,6 +67,7 @@ const RegenerateCreative = () => {
   const [cta, setCta] = useState(prefill?.cta ?? "");
   const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
   const [additionalInstructions, setAdditionalInstructions] = useState("");
+  const [creativeStyle, setCreativeStyle] = useState("");
 
   if (!prefill) {
     return (
