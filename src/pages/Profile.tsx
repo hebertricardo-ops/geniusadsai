@@ -181,7 +181,7 @@ const Profile = () => {
 
         {/* Credits */}
         <div className="gradient-card rounded-2xl border border-border shadow-card p-6 animate-fade-in">
-          <h3 className="<h3 className="font-display text-foreground mb-4">Créditos</h3></h3>
+          <h3 className="font-display text-foreground mb-4">Créditos</h3>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
