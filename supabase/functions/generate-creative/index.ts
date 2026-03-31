@@ -269,11 +269,12 @@ serve(async (req) => {
     );
 
     // Build Vertex AI request
-    const vertexEndpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/us-central1/publishers/google/models/gemini-2.0-flash-exp:generateContent`;
+    const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
 
     const vertexPayload = {
       contents: [
         {
+          role: "user",
           parts: [{ text: prompt }, ...imagesParts],
         },
       ],
