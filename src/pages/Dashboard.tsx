@@ -67,14 +67,16 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-10 animate-fade-in flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Avatar className="w-14 h-14 border-2 border-border">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={displayName} />
-              ) : null}
-              <AvatarFallback className="bg-primary/20 text-primary text-lg font-display">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <button onClick={() => navigate("/profile")} className="cursor-pointer">
+              <Avatar className="w-14 h-14 border-2 border-border hover:border-primary transition-colors">
+                {avatarUrl ? (
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                ) : null}
+                <AvatarFallback className="bg-primary/20 text-primary text-lg font-display">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
             <div>
               <h1 className="text-3xl md:text-4xl font-display text-foreground mb-1">
                 Olá, {displayName} 👋
