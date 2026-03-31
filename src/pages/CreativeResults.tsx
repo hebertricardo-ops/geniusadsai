@@ -112,12 +112,7 @@ const CreativeResults = () => {
             {/* Summary card */}
             {copyData && (
               <div className="gradient-card rounded-2xl p-6 border border-border shadow-card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display text-foreground text-lg">Resumo da Geração</h3>
-                  <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={!requestData}>
-                    <RefreshCw className="w-4 h-4" /> Gerar novo com mesmos dados
-                  </Button>
-                </div>
+                <h3 className="font-display text-foreground text-lg mb-4">Resumo da Geração</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                   {copyData.angle_name && (
                     <div>
@@ -157,6 +152,11 @@ const CreativeResults = () => {
                       <span className="text-foreground/80 text-xs">{copyData.body}</span>
                     </div>
                   )}
+                </div>
+                <div className="mt-5 flex justify-center">
+                  <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={!requestData} className="w-full sm:w-auto">
+                    <RefreshCw className="w-4 h-4" /> Gerar novo com mesmos dados
+                  </Button>
                 </div>
               </div>
             )}
