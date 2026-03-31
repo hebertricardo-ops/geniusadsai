@@ -33,11 +33,13 @@ DISTRIBUIÇÃO ESTRATÉGICA DOS 3 ÂNGULOS:
 Cada ângulo deve ser genuinamente diferente dos outros em abordagem e tom.
 
 OPÇÕES VISUAIS POR ÂNGULO:
-Para cada ângulo, gere 2 opções de conceito visual para o criativo estático:
-- Opção A: layout clean e premium — design sofisticado, minimalista e elegante
-- Opção B: layout clean e premium com copy mais agressiva e urgente — o design CONTINUA sofisticado e premium como a Opção A, porém com mensagem mais direta e impactante. Pode incluir mais destaque de cor no botão de CTA ou em elementos estratégicos para gerar urgência visual.
+Para cada ângulo, gere 2 VARIAÇÕES de conceito visual clean premium para o criativo estático:
+- Variação A1: layout clean e premium — design sofisticado, minimalista e elegante, com composição equilibrada e uso refinado de espaço negativo
+- Variação A2: layout clean e premium — igualmente sofisticado, porém com mais elementos gráficos, texturas e destaques visuais que enriquecem a composição mantendo a elegância
 
-REGRA IMPORTANTE PARA AMBAS AS OPÇÕES:
+Ambas as variações devem manter o padrão premium e sofisticado. A diferença está na abordagem visual (mais minimalista vs mais rica em elementos), NÃO no tom da copy.
+
+REGRA IMPORTANTE PARA AMBAS AS VARIAÇÕES:
 - Identifique o produto, nicho e suas características
 - Inclua elementos visuais temáticos (ícones, figurinhas, badges, selos) que estejam alinhados com o produto e nicho do anúncio
 - Esses elementos devem reforçar a identidade do nicho e tornar o criativo mais contextualizado e profissional
