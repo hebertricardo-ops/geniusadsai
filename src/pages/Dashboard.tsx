@@ -65,32 +65,31 @@ const Dashboard = () => {
     const productName = item.creative_requests?.product_name || "Criativo";
     return (
       <div
-        className="group relative rounded-xl overflow-hidden border border-border shadow-card animate-fade-in cursor-pointer"
+        className="group rounded-xl overflow-hidden border border-border shadow-card animate-fade-in cursor-pointer bg-secondary/30"
         style={{ animationDelay: `${index * 80}ms` }}
         onClick={() => navigate(`/results/${item.request_id}`)}
       >
-        <div className="aspect-[4/5] relative">
+        {/* Image container — object-contain so full creative is always visible */}
+        <div className="aspect-square bg-black/40 flex items-center justify-center overflow-hidden">
           <img
             src={item.image_url}
             alt={productName}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-300" />
-          {/* Content overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
-            <span className="text-white font-display text-sm font-medium truncate">
-              {productName}
+        </div>
+        {/* Info bar — always visible, never overlaps the image */}
+        <div className="p-3 flex flex-col gap-1 border-t border-border">
+          <span className="text-foreground font-display text-sm font-medium truncate">
+            {productName}
+          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">
+              {format(new Date(item.created_at), "dd/MM/yyyy")}
             </span>
-            <div className="flex items-center justify-between">
-              <span className="text-white/70 text-xs">
-                {format(new Date(item.created_at), "dd/MM/yyyy")}
-              </span>
-              <span className="text-xs text-primary font-medium flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                {item.credits_used}
-              </span>
-            </div>
+            <span className="text-xs text-primary font-medium flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              {item.credits_used}
+            </span>
           </div>
         </div>
       </div>
