@@ -200,6 +200,7 @@ const RegenerateCreative = () => {
           },
           format,
           quantity,
+          additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
       if (creativeError) throw creativeError;
