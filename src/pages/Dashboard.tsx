@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Plus, Image, Sparkles, ArrowRight, Lightbulb } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,12 @@ const Dashboard = () => {
   });
 
   const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "usuário";
+  const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  // Try to get avatar from storage
+  const avatarUrl = user
+    ? supabase.storage.from("creative-uploads").getPublicUrl(`${user.id}/avatar.png`).data.publicUrl
+    : null;
 
   const { data: history = [] } = useQuery({
     queryKey: ["creative-requests", user?.id],
@@ -59,13 +66,23 @@ const Dashboard = () => {
       <div className="max-w-5xl mx-auto px-4 py-10">
         {/* Header */}
         <div className="mb-10 animate-fade-in flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-display text-foreground mb-2">
-              Olá, {displayName} 👋
-            </h1>
-            <p className="text-xl md:text-2xl text-white">
-              Pronto para criar anúncios que convertem?
-            </p>
+          <div className="flex items-center gap-4">
+            <Avatar className="w-14 h-14 border-2 border-border">
+              {avatarUrl ? (
+                <AvatarImage src={avatarUrl} alt={displayName} />
+              ) : null}
+              <AvatarFallback className="bg-primary/20 text-primary text-lg font-display">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-display text-foreground mb-1">
+                Olá, {displayName} 👋
+              </h1>
+              <p className="text-xl md:text-2xl text-white">
+                Pronto para criar anúncios que convertem?
+              </p>
+            </div>
           </div>
           <Button variant="hero" size="lg" onClick={() => navigate("/create")}>
             <Plus className="w-5 h-5" />
