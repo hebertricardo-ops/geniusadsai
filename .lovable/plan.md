@@ -1,28 +1,35 @@
 
 
-## Plano: Ajuste de layout da Dashboard
+## Plano: Histórico Recente em Grid Portfolio com Carrossel
 
-### Alterações
+### Resumo
+Transformar a seção "Histórico recente" de uma lista vertical para um layout de grid estilo portfólio (3 colunas × 2 linhas), buscando dados da tabela `generated_creatives` (que tem `image_url`) em vez de `creative_requests`. Adicionar animação de carrossel usando Embla (já disponível no projeto via `carousel.tsx`).
 
-**1. Dashboard.tsx — Título e subtítulo personalizados**
-- Substituir "Gere criativos que convertem" por `Olá, [Nome] 👋` usando `user?.user_metadata?.name` ou email como fallback, alinhado à esquerda.
-- Manter `font-display` sem bold.
-- Subtítulo "Pronto para criar anúncios que convertem?" com texto branco e fonte maior (`text-xl md:text-2xl text-white`).
-- Mover o botão "Novo Criativo" para alinhamento à esquerda junto ao bloco de texto.
+### Alterações em `src/pages/Dashboard.tsx`
 
-**2. Background mais escuro**
-- Em `src/index.css`, escurecer `--background` de `222 47% 11%` para `222 47% 7%` e `--gradient-hero` proporcionalmente. Manter `--sidebar-background` inalterado.
+**1. Nova query — buscar os 6 últimos criativos com imagem**
+- Substituir a query `history` (que busca de `creative_requests`) por uma query em `generated_creatives` com join em `creative_requests` para obter `product_name`.
+- Query: `generated_creatives` → `select("*, creative_requests(product_name)")` → `order("created_at", desc)` → `limit(6)`.
 
-**3. Substituir card "Expira em" por card "Dica Pro"**
-- Remover o terceiro card do array (Clock/Expira em).
-- Adicionar um card separado com estilo de destaque (borda laranja/primary, fundo com tom de primary) contendo:
-  - Título: ícone `Lightbulb` + "Dica Pro" em cor primary.
-  - Texto da dica em cor muted-foreground.
+**2. Layout grid portfólio**
+- Substituir o bloco de lista (`divide-y`) por um grid `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` com `gap-4` dentro de um container com `p-6`.
+- Cada card será um componente estilizado com:
+  - Imagem do criativo (`image_url`) com `aspect-ratio 4/5`, `object-cover`, `rounded-xl`, efeito hover com scale e overlay.
+  - Overlay gradiente na parte inferior com: nome do produto, data (`dd/MM/yyyy`), créditos usados.
+  - Sem badge de status.
+  - Animação `animate-fade-in` com delay escalonado por índice.
 
-### Arquivos modificados
+**3. Carrossel (opcional, para mobile)**
+- No mobile (1 coluna), usar os componentes `Carousel`, `CarouselContent`, `CarouselItem` já existentes para permitir swipe entre os 6 cards.
+- No desktop, exibir o grid estático 3×2 (sem carrossel).
+
+**4. Imports adicionais**
+- Adicionar imports de `Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext` de `@/components/ui/carousel`.
+- Remover import de `Image` do lucide (não mais usado como ícone placeholder).
+
+### Arquivo modificado
 
 | Arquivo | Mudança |
 |---|---|
-| `src/pages/Dashboard.tsx` | Título personalizado, subtítulo, grid 2 colunas + card dica pro |
-| `src/index.css` | `--background` mais escuro |
+| `src/pages/Dashboard.tsx` | Nova query `generated_creatives`, grid portfólio 3×2, carrossel mobile |
 
