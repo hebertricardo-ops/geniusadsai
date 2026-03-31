@@ -278,6 +278,7 @@ const RegenerateCreative = () => {
     { icon: Sparkles, label: "Benefícios", value: benefits, onChange: setBenefits, type: "textarea" as const },
     { icon: MessageSquare, label: "Objeções", value: objections, onChange: setObjections, type: "textarea" as const },
     { icon: Zap, label: "CTA", value: cta, onChange: setCta, type: "input" as const },
+    { icon: MessageSquare, label: "Orientações adicionais", value: additionalInstructions, onChange: setAdditionalInstructions, type: "textarea" as const },
   ];
 
   return (

@@ -163,6 +163,7 @@ serve(async (req) => {
       body,
       cta,
       color_palette,
+      additional_instructions,
       visual_option,
     });
 

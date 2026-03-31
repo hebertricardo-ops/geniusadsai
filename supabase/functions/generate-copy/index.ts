@@ -101,7 +101,7 @@ CTA desejado: ${cta || "Compre agora"}`;
                           items: {
                             type: "object",
                             properties: {
-                              option_label: { type: "string", description: "Ex: Opção A - Clean Premium ou Opção B - Agressivo Direto" },
+                              option_label: { type: "string", description: "Ex: Variação A1 - Minimalista Premium ou Variação A2 - Premium Rico em Elementos" },
                               visual_description: { type: "string", description: "Mini descrição da linha visual" },
                               element_distribution: { type: "string", description: "Distribuição sugerida dos elementos no criativo" },
                               composition: { type: "string", description: "Orientação de composição" },
