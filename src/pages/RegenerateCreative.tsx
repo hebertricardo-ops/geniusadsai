@@ -67,6 +67,7 @@ const RegenerateCreative = () => {
   const [cta, setCta] = useState(prefill?.cta ?? "");
   const [quantity, setQuantity] = useState(prefill?.quantity ?? 1);
   const [additionalInstructions, setAdditionalInstructions] = useState("");
+  const [creativeStyle, setCreativeStyle] = useState("");
 
   if (!prefill) {
     return (
@@ -115,7 +116,7 @@ const RegenerateCreative = () => {
       if (reqError) throw reqError;
 
       const { data: copyData, error: copyError } = await supabase.functions.invoke("generate-copy", {
-        body: { product_name: productName, promise, pains, benefits, objections, cta },
+        body: { product_name: productName, promise, pains, benefits, objections, cta, creative_style: creativeStyle || undefined },
       });
       if (copyError) throw copyError;
 
@@ -200,6 +201,7 @@ const RegenerateCreative = () => {
           },
           format,
           quantity,
+          creative_style: creativeStyle || undefined,
           additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
@@ -370,6 +372,39 @@ const RegenerateCreative = () => {
                     ))}
                   </div>
                 </div>
+              </div>
+
+              {/* Estilo do Criativo */}
+              <div className="pt-4 border-t border-border">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Estilo do Criativo</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: "dark", label: "Dark / Escuro" },
+                    { value: "light", label: "Claro / Light" },
+                    { value: "clean", label: "Clean / Minimalista" },
+                    { value: "premium", label: "Premium / Luxuoso" },
+                    { value: "playful", label: "Infantil / Lúdico" },
+                    { value: "tech", label: "Tecnológico / Futurista" },
+                    { value: "vibrant", label: "Vibrante / Chamativo" },
+                    { value: "corporate", label: "Corporativo / Profissional" },
+                  ].map((style) => (
+                    <button
+                      key={style.value}
+                      type="button"
+                      onClick={() => setCreativeStyle(creativeStyle === style.value ? "" : style.value)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                        creativeStyle === style.value
+                          ? "border-primary bg-primary/10 text-primary shadow-md scale-105"
+                          : "border-border bg-background/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                      }`}
+                    >
+                      {style.label}
+                    </button>
+                  ))}
+                </div>
+                {!creativeStyle && (
+                  <p className="text-xs text-muted-foreground mt-2">Nenhum estilo selecionado — a IA escolherá automaticamente.</p>
+                )}
               </div>
             </div>
           </div>
