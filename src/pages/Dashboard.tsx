@@ -43,14 +43,16 @@ const Dashboard = () => {
   return (
     <div>
       <div className="max-w-5xl mx-auto px-4 py-10">
-        {/* Header alinhado à esquerda */}
-        <div className="mb-10 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-display text-foreground mb-2">
-            Olá, {displayName} 👋
-          </h1>
-          <p className="text-xl md:text-2xl text-white mb-6">
-            Pronto para criar anúncios que convertem?
-          </p>
+        {/* Header */}
+        <div className="mb-10 animate-fade-in flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-display text-foreground mb-2">
+              Olá, {displayName} 👋
+            </h1>
+            <p className="text-xl md:text-2xl text-white">
+              Pronto para criar anúncios que convertem?
+            </p>
+          </div>
           <Button variant="hero" size="lg" onClick={() => navigate("/create")}>
             <Plus className="w-5 h-5" />
             Novo Criativo
@@ -58,8 +60,8 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Stats cards — 2 colunas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Stats + Dica Pro — 3 colunas no desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           {[
             { icon: Sparkles, label: "Créditos disponíveis", value: String(credits?.credits_balance ?? 0), color: "text-primary" },
             { icon: Image, label: "Criativos gerados", value: String(totalCreatives), color: "text-foreground" },
@@ -72,17 +74,17 @@ const Dashboard = () => {
               <span className={`text-2xl font-display ${color}`}>{value}</span>
             </div>
           ))}
-        </div>
 
-        {/* Card Dica Pro */}
-        <div className="rounded-xl p-5 border border-primary/40 bg-primary/5 mb-10 animate-fade-in">
-          <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="w-5 h-5 text-primary" />
-            <span className="font-display text-primary">Dica Pro</span>
+          {/* Card Dica Pro */}
+          <div className="rounded-xl p-5 border border-primary/40 bg-primary/5 animate-fade-in">
+            <div className="flex items-center gap-2 mb-2">
+              <Lightbulb className="w-5 h-5 text-primary" />
+              <span className="font-display text-primary">Dica Pro</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Seja específico nas dores do seu cliente. A IA gera melhores ângulos quando entende o problema real.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Seja específico nas dores do seu cliente. A IA gera melhores ângulos quando entende o problema real.
-          </p>
         </div>
 
         {/* Histórico */}
