@@ -25,7 +25,38 @@ const CreativeResults = () => {
     enabled: !!requestId && !!user,
   });
 
+  const { data: requestData } = useQuery({
+    queryKey: ["creative-request", requestId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("creative_requests")
+        .select("*")
+        .eq("id", requestId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!requestId && !!user,
+  });
+
   const copyData = creatives[0]?.copy_data as Record<string, any> | null;
+
+  const handleRegenerate = () => {
+    if (!requestData) return;
+    navigate("/regenerate", {
+      state: {
+        prefill: {
+          product_name: requestData.product_name,
+          promise: requestData.promise,
+          pains: requestData.pains,
+          benefits: requestData.benefits,
+          objections: requestData.objections ?? "",
+          cta: requestData.cta ?? "",
+          quantity: requestData.quantity,
+        },
+      },
+    });
+  };
 
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
