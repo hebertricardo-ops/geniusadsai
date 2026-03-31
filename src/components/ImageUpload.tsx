@@ -56,7 +56,7 @@ const ImageUpload = ({ images, onImagesChange, maxImages = 4 }: ImageUploadProps
         onClick={() => document.getElementById("file-upload")?.click()}
       >
         <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
-        <p className="text-foreground font-medium font-display">
+        <p className="text-foreground font-display">
           Arraste imagens aqui
         </p>
         <p className="text-sm text-muted-foreground mt-1">
