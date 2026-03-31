@@ -461,9 +461,7 @@ const CreateCreative = () => {
 
                   {/* Estilo Principal do Criativo */}
                   <div className="space-y-3">
-                    <h2 className="text-xl font-display text-foreground flex items-center gap-2">
-                      <Palette className="w-4 h-4" /> Estilo do Criativo (opcional)
-                    </h2>
+                    <h2 className="text-xl font-display text-foreground">Estilo do Criativo</h2>
                     <div className="flex flex-wrap gap-2">
                       {[
                         { value: "dark", label: "Dark / Escuro" },
