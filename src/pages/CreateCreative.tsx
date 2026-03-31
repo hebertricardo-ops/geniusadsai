@@ -198,7 +198,7 @@ const CreateCreative = () => {
           },
           format,
           quantity,
-          color_palette: colorPalette.length > 0 ? colorPalette : undefined,
+          creative_style: creativeStyle || undefined,
           additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
