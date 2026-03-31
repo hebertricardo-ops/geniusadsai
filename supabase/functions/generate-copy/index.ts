@@ -61,7 +61,9 @@ Promessa: ${promise}
 Dores: ${pains}
 Benefícios: ${benefits}
 Objeções: ${objections || "Nenhuma informada"}
-CTA desejado: ${cta || "Compre agora"}`;
+CTA base informado pelo usuário: ${cta || "Compre agora"}
+
+REGRA DE CTA: Use o CTA informado pelo usuário como ponto de partida e reescreva-o incluindo uma frase que desperte gatilho de urgência ou curiosidade. Ex: se o CTA base for "Saiba Mais", o CTA final pode ser "Saiba Mais Antes que Acabe" ou "Descubra o Segredo — Saiba Mais".`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
