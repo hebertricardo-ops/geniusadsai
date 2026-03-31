@@ -201,6 +201,7 @@ const RegenerateCreative = () => {
           },
           format,
           quantity,
+          creative_style: creativeStyle || undefined,
           additional_instructions: additionalInstructions.trim() || undefined,
         },
       });
