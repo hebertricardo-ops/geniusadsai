@@ -274,6 +274,7 @@ serve(async (req) => {
     const vertexPayload = {
       contents: [
         {
+          role: "user",
           parts: [{ text: prompt }, ...imagesParts],
         },
       ],
