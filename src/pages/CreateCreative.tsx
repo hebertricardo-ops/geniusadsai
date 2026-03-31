@@ -347,7 +347,7 @@ const CreateCreative = () => {
                         >
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="font-display font-semibold text-sm text-foreground">
+                              <span className="font-display text-sm text-foreground">
                                 {visual.option_label}
                               </span>
                               {selectedAngle === angleIdx && selectedVisual === visIdx && (
