@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Plus, Image, Sparkles, ArrowRight, Lightbulb } from "lucide-react";
+import { Plus, Sparkles, ArrowRight, Lightbulb, ImageIcon } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,19 +31,18 @@ const Dashboard = () => {
   const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "usuário";
   const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
-  // Try to get avatar from storage
   const avatarUrl = user
     ? supabase.storage.from("creative-uploads").getPublicUrl(`${user.id}/avatar.png`).data.publicUrl
     : null;
 
-  const { data: history = [] } = useQuery({
-    queryKey: ["creative-requests", user?.id],
+  const { data: recentCreatives = [] } = useQuery({
+    queryKey: ["recent-creatives", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("creative_requests")
-        .select("*")
+        .from("generated_creatives")
+        .select("*, creative_requests(product_name)")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(6);
       if (error) throw error;
       return data;
     },
@@ -60,6 +60,42 @@ const Dashboard = () => {
     },
     enabled: !!user,
   });
+
+  const CreativeCard = ({ item, index }: { item: any; index: number }) => {
+    const productName = item.creative_requests?.product_name || "Criativo";
+    return (
+      <div
+        className="group relative rounded-xl overflow-hidden border border-border shadow-card animate-fade-in cursor-pointer"
+        style={{ animationDelay: `${index * 80}ms` }}
+        onClick={() => navigate(`/results/${item.request_id}`)}
+      >
+        <div className="aspect-[4/5] relative">
+          <img
+            src={item.image_url}
+            alt={productName}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-300" />
+          {/* Content overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
+            <span className="text-white font-display text-sm font-medium truncate">
+              {productName}
+            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-white/70 text-xs">
+                {format(new Date(item.created_at), "dd/MM/yyyy")}
+              </span>
+              <span className="text-xs text-primary font-medium flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                {item.credits_used}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -93,11 +129,11 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Stats + Dica Pro — 3 colunas no desktop */}
+        {/* Stats + Dica Pro */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
           {[
             { icon: Sparkles, label: "Créditos disponíveis", value: String(credits?.credits_balance ?? 0), color: "text-primary" },
-            { icon: Image, label: "Criativos gerados", value: String(totalCreatives), color: "text-foreground" },
+            { icon: ImageIcon, label: "Criativos gerados", value: String(totalCreatives), color: "text-foreground" },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="gradient-card rounded-xl p-5 border border-border shadow-card animate-fade-in">
               <div className="flex items-center gap-3 mb-2">
@@ -107,8 +143,6 @@ const Dashboard = () => {
               <span className={`text-2xl font-display ${color}`}>{value}</span>
             </div>
           ))}
-
-          {/* Card Dica Pro */}
           <div className="rounded-xl p-5 border border-primary/40 bg-primary/5 animate-fade-in">
             <div className="flex items-center gap-2 mb-2">
               <Lightbulb className="w-5 h-5 text-primary" />
@@ -120,39 +154,42 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Histórico */}
+        {/* Portfólio - Histórico */}
         <div className="gradient-card rounded-2xl border border-border shadow-card overflow-hidden">
           <div className="p-6 border-b border-border">
             <h2 className="text-lg font-display text-foreground">Histórico recente</h2>
             <p className="text-sm text-muted-foreground">Seus últimos criativos gerados</p>
           </div>
-          <div className="divide-y divide-border">
-            {history.length === 0 ? (
-              <div className="px-6 py-8 text-center text-muted-foreground">
-                Nenhum criativo gerado ainda. Comece criando seu primeiro!
+
+          {recentCreatives.length === 0 ? (
+            <div className="px-6 py-12 text-center text-muted-foreground">
+              Nenhum criativo gerado ainda. Comece criando seu primeiro!
+            </div>
+          ) : (
+            <>
+              {/* Desktop: grid 3×2 */}
+              <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-4 p-6">
+                {recentCreatives.map((item: any, i: number) => (
+                  <CreativeCard key={item.id} item={item} index={i} />
+                ))}
               </div>
-            ) : (
-              history.map((item: any) => (
-                <div key={item.id} className="px-6 py-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Image className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{item.product_name}</p>
-                      <p className="text-sm text-muted-foreground">{format(new Date(item.created_at), "dd/MM/yyyy")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">{item.quantity} créditos</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${item.status === "completed" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
-                      {item.status === "completed" ? "Concluído" : item.status === "processing" ? "Processando" : "Pendente"}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+
+              {/* Mobile: carrossel */}
+              <div className="sm:hidden p-4">
+                <Carousel opts={{ align: "start", loop: true }} className="w-full">
+                  <CarouselContent className="-ml-3">
+                    {recentCreatives.map((item: any, i: number) => (
+                      <CarouselItem key={item.id} className="pl-3 basis-[85%]">
+                        <CreativeCard item={item} index={i} />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="-left-3 bg-background/80 border-border" />
+                  <CarouselNext className="-right-3 bg-background/80 border-border" />
+                </Carousel>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
