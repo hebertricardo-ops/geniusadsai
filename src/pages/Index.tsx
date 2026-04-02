@@ -311,8 +311,33 @@ const Index = () => {
                 variant="hero"
                 size="sm"
                 className="w-full text-xs whitespace-normal text-center leading-tight py-2"
-                onClick={() => navigate("/auth")}
+                onClick={async () => {
+                  if (packageId === "free") {
+                    navigate("/auth");
+                    return;
+                  }
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) {
+                    toast.info("Faça login para comprar créditos");
+                    navigate("/auth");
+                    return;
+                  }
+                  try {
+                    const { data, error } = await supabase.functions.invoke("create-checkout", {
+                      body: { packageId },
+                    });
+                    if (error) throw error;
+                    if (data?.url) {
+                      window.open(data.url, "_blank");
+                    }
+                  } catch (err: any) {
+                    toast.error("Erro ao iniciar pagamento. Tente novamente.");
+                    console.error(err);
+                  }
+                }}
               >
+                {cta}
+              </Button>
                 {cta}
               </Button>
             </div>
