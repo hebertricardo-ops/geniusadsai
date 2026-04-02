@@ -61,7 +61,7 @@ const Index = () => {
             { emoji: "⚡", text: "Gere criativos completos em segundos (imagem + copy)" },
             { emoji: "🧠", text: "Baseado nas dores reais do seu público" },
             { emoji: "🎯", text: "Copy já estruturada para conversão" },
-            { emoji: "🖼️", text: "Use suas imagens ou deixe a IA montar tudo" },
+            
             { emoji: "🚀", text: "Teste muito mais criativos em menos tempo" },
             { emoji: "📈", text: "Valide sua oferta até 10x mais rápido" },
             { emoji: "💸", text: "Pare de depender de designer ou inspiração" },
