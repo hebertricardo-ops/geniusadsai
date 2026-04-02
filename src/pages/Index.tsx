@@ -307,7 +307,7 @@ const Index = () => {
               <Button
                 variant={highlight ? "hero" : "outline"}
                 size="sm"
-                className="w-full"
+                className="w-full text-xs"
                 onClick={() => navigate("/auth")}
               >
                 👉 {cta}
