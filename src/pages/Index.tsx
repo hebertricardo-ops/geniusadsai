@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Zap, ArrowRight, Sparkles, Image, Shield, Clock,
   Brain, Target, Upload, PenTool, Layers, Quote,
@@ -252,30 +255,30 @@ const Index = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
-              name: "Free", emoji: "🆓", credits: 4, price: "R$ 0,00", perUnit: null, highlight: false,
+              name: "Free", emoji: "🆓", credits: 4, price: "R$ 0,00", perUnit: null, highlight: false, packageId: "free",
               tagline: "Para quem quer testar antes de investir",
               features: ["Acesso imediato", "100% gratuito", "Sem compromisso"],
               cta: "COMEÇAR GRÁTIS",
             },
             {
-              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false,
+              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false, packageId: "basico",
               tagline: "Para quem quer sair do zero e começar a testar de verdade",
               features: ["Criação em escala inicial", "Mais testes = mais chances de vender", "Baixo custo por criativo", "Acesso imediato"],
               cta: "COMEÇAR COM O BÁSICO",
             },
             {
-              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true,
+              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true, packageId: "pro",
               tagline: "Para quem quer performance e consistência",
               features: ["Melhor custo-benefício", "Volume + velocidade de execução", "Acelera validação de campanhas", "Custo ainda mais baixo por criativo", "Acesso imediato"],
               cta: "ESCALAR COM O PRO",
             },
             {
-              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false,
+              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false, packageId: "plus",
               tagline: "Para quem quer dominar o jogo dos criativos",
               features: ["Menor custo por criativo", "Máxima produtividade", "Liberdade total para testar", "Valide ofertas 10x mais rápido", "Acesso imediato"],
               cta: "QUERO ESCALAR AO MÁXIMO",
             },
-          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta }) => (
+          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta, packageId }) => (
             <div
               key={name}
               className={`gradient-card rounded-2xl p-7 border shadow-card flex flex-col relative ${
@@ -308,7 +311,30 @@ const Index = () => {
                 variant="hero"
                 size="sm"
                 className="w-full text-xs whitespace-normal text-center leading-tight py-2"
-                onClick={() => navigate("/auth")}
+                onClick={async () => {
+                  if (packageId === "free") {
+                    navigate("/auth");
+                    return;
+                  }
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) {
+                    toast.info("Faça login para comprar créditos");
+                    navigate("/auth");
+                    return;
+                  }
+                  try {
+                    const { data, error } = await supabase.functions.invoke("create-checkout", {
+                      body: { packageId },
+                    });
+                    if (error) throw error;
+                    if (data?.url) {
+                      window.open(data.url, "_blank");
+                    }
+                  } catch (err: any) {
+                    toast.error("Erro ao iniciar pagamento. Tente novamente.");
+                    console.error(err);
+                  }
+                }}
               >
                 {cta}
               </Button>
