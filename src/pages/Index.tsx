@@ -305,7 +305,7 @@ const Index = () => {
                 ))}
               </div>
               <Button
-                variant={highlight ? "hero" : "outline"}
+                variant="hero"
                 size="sm"
                 className="w-full text-xs whitespace-normal text-center leading-tight py-2"
                 onClick={() => navigate("/auth")}
