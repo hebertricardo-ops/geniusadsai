@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Zap, ArrowRight, Sparkles, Image, Shield, Clock,
   Brain, Target, Upload, PenTool, Layers, Quote,
