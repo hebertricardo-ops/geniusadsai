@@ -6,6 +6,7 @@ import {
   Check, X, Package, FileText, BarChart3
 } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.png";
+import logoText from "@/assets/logo-text.png";
 import {
   Accordion,
   AccordionContent,
@@ -22,7 +23,7 @@ const Index = () => {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border/50">
         <div className="flex items-center gap-2">
           <img src={logoIcon} alt="Genius ADS" className="w-9 h-9 rounded-xl object-contain" />
-          <span className="text-xl font-display text-foreground">Genius ADS</span>
+          <img src={logoText} alt="Genius ADS" className="h-6 object-contain" />
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
