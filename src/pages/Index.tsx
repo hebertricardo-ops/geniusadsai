@@ -5,6 +5,7 @@ import {
   Brain, Target, Upload, PenTool, Layers, Quote,
   Check, X, Package, FileText, BarChart3
 } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
 import {
   Accordion,
   AccordionContent,
