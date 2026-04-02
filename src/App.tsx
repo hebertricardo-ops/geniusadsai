@@ -14,6 +14,7 @@ import CreativeResults from "./pages/CreativeResults";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
 import RegenerateCreative from "./pages/RegenerateCreative";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
