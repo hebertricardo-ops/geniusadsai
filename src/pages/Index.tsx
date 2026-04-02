@@ -186,7 +186,7 @@ const Index = () => {
           ].map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="gradient-card rounded-2xl p-7 border border-border shadow-card hover:border-primary/30 transition-all duration-300 group"
+              className="gradient-card rounded-2xl p-7 border border-border shadow-card hover:border-primary/30 transition-all duration-300 group flex flex-col items-center text-center"
             >
               <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center mb-5 group-hover:gradient-primary transition-all duration-300">
                 <Icon className="w-5 h-5 text-primary group-hover:text-primary-foreground transition-colors" />
