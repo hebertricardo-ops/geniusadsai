@@ -301,7 +301,7 @@ const Index = () => {
               <p className="text-xs text-muted-foreground text-center italic mb-5">💬 {tagline}</p>
               <div className="space-y-2 mb-6 flex-1">
                 {features.map((f) => (
-                  <p key={f} className="text-sm text-muted-foreground">{f}</p>
+                  <p key={f} className="text-sm text-muted-foreground text-center">{f}</p>
                 ))}
               </div>
               <Button
