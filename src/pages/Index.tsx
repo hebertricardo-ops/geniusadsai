@@ -38,10 +38,9 @@ const Index = () => {
       {/* DOBRA 1 — Hero */}
       <section className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
         <h1 className="text-4xl md:text-6xl font-display text-foreground leading-tight mb-6 animate-fade-in">
-          Crie criativos profissionais que{" "}
-          <span className="text-gradient">vendem</span>
+          Criativos que <span className="text-gradient">vendem</span>,
           <br />
-          em segundos
+          gerados em segundos
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in">
           Transforme qualquer produto ou serviço em criativos de alta conversão em menos de 60 segundos, sem precisar pensar, escrever ou editar.
