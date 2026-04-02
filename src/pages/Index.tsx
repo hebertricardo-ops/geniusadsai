@@ -205,8 +205,8 @@ const Index = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="gradient-card rounded-2xl p-8 border border-border shadow-card">
-            <h3 className="font-display text-foreground text-lg mb-6 flex items-center gap-2">
-              <Check className="w-5 h-5 text-primary" /> Isso é pra você se:
+            <h3 className="font-display text-foreground text-lg mb-6">
+              Isso é pra você se:
             </h3>
             <div className="space-y-4">
               {[
