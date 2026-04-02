@@ -23,7 +23,7 @@ const Index = () => {
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border/50">
         <div className="flex items-center gap-2">
           <img src={logoIcon} alt="Genius ADS" className="w-9 h-9 rounded-xl object-contain" />
-          <img src={logoText} alt="Genius ADS" className="h-6 object-cover" />
+          <img src={logoText} alt="Genius ADS" className="h-6 text-xl object-fill" />
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
