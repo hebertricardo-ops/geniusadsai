@@ -1,62 +1,32 @@
+## Plano: Reescrever a landing page do Genius ADS com a nova copy (9 dobras)
 
+### Resumo
 
-## Plano: Migrar geração de imagens para Vertex AI com `gemini-3-pro-image-preview`
+Reescrever completamente o conteúdo do `src/pages/Index.tsx` mantendo o mesmo layout system (gradient-hero, gradient-card, shadow-card, font-display, cores laranja/azul marinho, botões hero/outline, animações) mas expandindo de 5 seções para 9 dobras com toda a copy fornecida.  
+  
+Mantenha a barra superior com o nome do aplicativo "Genius" e os botões de "Entrar" e "Começar Grátis".  
+Na dobra 1 mantenha os botões "Começar Agora" e "Ver Demo".
 
-### Contexto
-O arquivo enviado é uma **service account** do Google Cloud (projeto `genius-ads`). Para usar Vertex AI com service account, a edge function precisa:
-1. Gerar um JWT assinado com a chave privada
-2. Trocar o JWT por um access token OAuth2
-3. Chamar a API Vertex AI com o access token
+### Estrutura das Dobras
 
-### Passo 1 — Armazenar credenciais como secret
-- Salvar o conteúdo completo do JSON da service account como uma secret `GOOGLE_SERVICE_ACCOUNT_JSON` no projeto.
+**Arquivo**: `src/pages/Index.tsx`
 
-### Passo 2 — Reescrever `supabase/functions/generate-creative/index.ts`
+1. **Nav** — Mantém exatamente como está (logo + Entrar + Começar grátis)
+2. **Dobra 1 — Hero** — Título "Crie criativos profissionais que vendem em segundos", subtítulo com a promessa, lista de 7 benefícios com emojis, CTA "Começar agora". Remover badge "Powered by AI" e botão "Ver demo". Adicionar grid de benefícios abaixo do CTA.
+3. **Dobra 2 — Dor** — Fundo card escuro. Quotes estilizados em itálico/aspas com as 6 frases de dor. Texto de transição "Se você já pensou isso… o problema não é seu produto."
+4. **Dobra 3 — Transição Dor → Solução** — Lista com ❌ dos problemas, seguido do texto "Você não precisa ser criativo. Você precisa de um sistema…" e menção ao Genius ADS.
+5. **Dobra 4 — Passo a passo** — Reutiliza o layout atual de 4 steps (círculos gradient-primary numerados) com a nova copy: Envie imagens → Preencha → Clique em gerar → Baixe e use. Adicionar "Sem travar / Sem pensar demais / Sem perder tempo" abaixo.
+6. **Dobra 5 — O que você recebe** — Grid 3x2 de cards (gradient-card) com ícones, títulos e descrições dos 6 itens.
+7. **Dobra 6 — Para quem serve** — Duas colunas: ✅ "É pra você se" e ❌ "Não é pra você se", cada uma com lista de itens.
+8. **Dobra 7 — Preços** — Grid de 4 cards de pricing (Free, Básico, Pro, Plus) com valores, preço por criativo e CTA principal.
+9. **Dobra 8 — Custo de não comprar** — Seção texto com comparação "Hoje você…" vs "Com o Genius ADS você…"
+10. **Dobra 9 — CTA Final + FAQ** — CTA com botão, seguido de Accordion/lista de FAQ com as 6 perguntas.
+11. **Footer** — Atualiza "CreativeAI" para "Genius ADS" e ano para 2025.
 
-**Autenticação via Service Account:**
-- Parsear o JSON da secret para extrair `client_email` e `private_key`
-- Gerar JWT com header `RS256`, claims `iss`, `sub`, `aud` (token endpoint), `scope` (`https://www.googleapis.com/auth/cloud-platform`), `iat`, `exp`
-- Assinar o JWT usando `crypto.subtle.importKey` + `crypto.subtle.sign` (Web Crypto API nativa do Deno)
-- Trocar o JWT por access token via `POST https://oauth2.googleapis.com/token`
+### Detalhes Técnicos
 
-**Chamada Vertex AI:**
-- Endpoint: `https://us-central1-aiplatform.googleapis.com/v1/projects/genius-ads/locations/us-central1/publishers/google/models/gemini-3-pro-image-preview:generateContent`
-- Header: `Authorization: Bearer ${accessToken}`
-- Payload:
-```json
-{
-  "contents": [{
-    "parts": [
-      { "text": "<prompt>" },
-      { "inlineData": { "mimeType": "image/png", "data": "<base64>" } }
-    ]
-  }],
-  "generationConfig": {
-    "responseModalities": ["IMAGE"],
-    "imageConfig": { "aspectRatio": "1:1" }
-  }
-}
-```
-
-**Imagens de referência:**
-- Fetch cada URL assinada → arrayBuffer → base64 → enviar como `inlineData`
-
-**Múltiplas imagens:**
-- Gemini gera 1 imagem por chamada → `Promise.all` para `quantity` chamadas paralelas
-
-**Resposta:**
-- Extrair `inlineData.data` (base64) da resposta
-- Upload como PNG no bucket `generated-creatives` via Supabase Storage (service role)
-- Retornar `{ images: [{ url: "..." }] }` — mesmo contrato atual
-
-**Manter `buildPrompt` intacta** — sem alterações na lógica do prompt.
-
-### Sem alterações no frontend
-O contrato de resposta é idêntico — `CreateCreative.tsx` e `RegenerateCreative.tsx` continuam funcionando sem mudanças.
-
-### Arquivos modificados
-
-| Arquivo | Mudança |
-|---|---|
-| `supabase/functions/generate-creative/index.ts` | Substituir Fal.ai por Vertex AI + service account auth |
-
+- **Imports adicionais**: `Accordion, AccordionItem, AccordionTrigger, AccordionContent` de `@/components/ui/accordion` para o FAQ. Novos ícones do Lucide conforme necessário (Brain, Target, Upload, PenTool, Layers, etc.)
+- **Padrões visuais reutilizados**: `gradient-card`, `shadow-card`, `gradient-primary`, `shadow-glow`, `text-gradient`, `font-display`, `text-muted-foreground`, botões `variant="hero"`
+- **Responsividade**: Grids `grid-cols-1 md:grid-cols-2` ou `md:grid-cols-3` conforme o número de itens
+- **Pricing cards**: Destaque no pacote Pro com `border-primary` e badge "Mais popular"
+- **Nenhuma mudança** em CSS, rotas ou outros componentes
