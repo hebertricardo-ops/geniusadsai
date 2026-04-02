@@ -310,7 +310,7 @@ const Index = () => {
                 className="w-full text-xs"
                 onClick={() => navigate("/auth")}
               >
-                👉 {cta}
+                {cta}
               </Button>
             </div>
           ))}
