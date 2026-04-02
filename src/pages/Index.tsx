@@ -254,25 +254,25 @@ const Index = () => {
             {
               name: "Free", emoji: "🆓", credits: 4, price: "R$ 0,00", perUnit: null, highlight: false,
               tagline: "Para quem quer testar antes de investir",
-              features: ["⚡ Acesso imediato", "💸 100% gratuito", "🚀 Sem compromisso"],
+              features: ["Acesso imediato", "100% gratuito", "Sem compromisso"],
               cta: "COMEÇAR GRÁTIS",
             },
             {
               name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false,
               tagline: "Para quem quer sair do zero e começar a testar de verdade",
-              features: ["⚡ Criação em escala inicial", "🎯 Mais testes = mais chances de vender", "💰 Baixo custo por criativo", "⚡ Acesso imediato"],
+              features: ["Criação em escala inicial", "Mais testes = mais chances de vender", "Baixo custo por criativo", "Acesso imediato"],
               cta: "COMEÇAR COM O BÁSICO",
             },
             {
               name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true,
               tagline: "Para quem quer performance e consistência",
-              features: ["🔥 Melhor custo-benefício", "⚡ Volume + velocidade de execução", "📈 Acelera validação de campanhas", "💰 Custo ainda mais baixo por criativo", "⚡ Acesso imediato"],
+              features: ["Melhor custo-benefício", "Volume + velocidade de execução", "Acelera validação de campanhas", "Custo ainda mais baixo por criativo", "Acesso imediato"],
               cta: "ESCALAR COM O PRO",
             },
             {
               name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false,
               tagline: "Para quem quer dominar o jogo dos criativos",
-              features: ["💰 Menor custo por criativo", "🚀 Máxima produtividade", "🧠 Liberdade total para testar", "📈 Valide ofertas 10x mais rápido", "⚡ Acesso imediato"],
+              features: ["Menor custo por criativo", "Máxima produtividade", "Liberdade total para testar", "Valide ofertas 10x mais rápido", "Acesso imediato"],
               cta: "QUERO ESCALAR AO MÁXIMO",
             },
           ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta }) => (
