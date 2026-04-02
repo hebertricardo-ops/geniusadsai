@@ -272,7 +272,7 @@ const Index = () => {
             {
               name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false,
               tagline: "Para quem quer dominar o jogo dos criativos",
-              features: ["💰 Menor custo por criativo", "🚀 Máxima produtividade", "🧠 Liberdade total para testar", "📈 Valide ofertas 10x mais rápido", "⚡ Acesso imediato"],
+              features: ["Menor custo por criativo", "Máxima produtividade", "Liberdade total para testar", "Valide ofertas 10x mais rápido", "Acesso imediato"],
               cta: "QUERO ESCALAR AO MÁXIMO",
             },
           ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta }) => (
