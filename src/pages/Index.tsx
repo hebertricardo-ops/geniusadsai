@@ -286,12 +286,6 @@ const Index = () => {
             </div>
           ))}
         </div>
-        <div className="text-center mt-10">
-          <Button variant="hero" size="lg" onClick={() => navigate("/auth")}>
-            QUERO GERAR MEUS CRIATIVOS AGORA
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-        </div>
       </section>
 
       {/* DOBRA 8 — Custo de não comprar */}
