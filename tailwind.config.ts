@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         display: ["Changa One", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        body: ["Poppins", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
