@@ -260,7 +260,7 @@ const Index = () => {
             {
               name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false,
               tagline: "Para quem quer sair do zero e começar a testar de verdade",
-              features: ["⚡ Criação em escala inicial", "🎯 Mais testes = mais chances de vender", "💰 Baixo custo por criativo", "⚡ Acesso imediato"],
+              features: ["Criação em escala inicial", "Mais testes = mais chances de vender", "Baixo custo por criativo", "Acesso imediato"],
               cta: "COMEÇAR COM O BÁSICO",
             },
             {
