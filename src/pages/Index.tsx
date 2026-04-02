@@ -316,19 +316,13 @@ const Index = () => {
                     navigate("/auth");
                     return;
                   }
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) {
-                    toast.info("Faça login para comprar créditos");
-                    navigate("/auth");
-                    return;
-                  }
                   try {
                     const { data, error } = await supabase.functions.invoke("create-checkout", {
                       body: { packageId },
                     });
                     if (error) throw error;
                     if (data?.url) {
-                      window.open(data.url, "_blank");
+                      window.location.href = data.url;
                     }
                   } catch (err: any) {
                     toast.error("Erro ao iniciar pagamento. Tente novamente.");
