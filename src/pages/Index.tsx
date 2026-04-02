@@ -21,9 +21,7 @@ const Index = () => {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border/50">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-            <Zap className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src={logoIcon} alt="Genius ADS" className="w-9 h-9 rounded-xl object-contain" />
           <span className="text-xl font-display text-foreground">Genius ADS</span>
         </div>
         <div className="flex items-center gap-3">
