@@ -9,9 +9,9 @@ const corsHeaders = {
 };
 
 const PRICE_MAP: Record<string, { priceId: string; credits: number }> = {
-  basico: { priceId: "price_1THoYlEqqPqtDvVcjvJhSZG5", credits: 20 },
-  pro: { priceId: "price_1THoZ8EqqPqtDvVchpKoBkla", credits: 50 },
-  plus: { priceId: "price_1THoZUEqqPqtDvVc4tTRDjgP", credits: 100 },
+  basico: { priceId: "price_1THpcrIHwK20nCZlGoGCTqAY", credits: 20 },
+  pro: { priceId: "price_1THpebIHwK20nCZlHCAAdR8o", credits: 50 },
+  plus: { priceId: "price_1THpevIHwK20nCZlN0XaQXGH", credits: 100 },
 };
 
 serve(async (req) => {
