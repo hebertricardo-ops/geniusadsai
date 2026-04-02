@@ -217,7 +217,7 @@ const Index = () => {
                 "Quer escalar sem depender de designer",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-3">
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                   <span className="text-sm text-muted-foreground">{item}</span>
                 </div>
               ))}
