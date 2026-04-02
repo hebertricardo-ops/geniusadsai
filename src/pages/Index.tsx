@@ -251,14 +251,34 @@ const Index = () => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { name: "Free", emoji: "🆓", credits: 4, price: "R$ 0,00", perUnit: null, highlight: false },
-            { name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false },
-            { name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true },
-            { name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false },
-          ].map(({ name, emoji, credits, price, perUnit, highlight }) => (
+            {
+              name: "Free", emoji: "🆓", credits: 4, price: "R$ 0,00", perUnit: null, highlight: false,
+              tagline: "Para quem quer testar antes de investir",
+              features: ["⚡ Acesso imediato", "💸 100% gratuito", "🚀 Sem compromisso"],
+              cta: "COMEÇAR GRÁTIS",
+            },
+            {
+              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false,
+              tagline: "Para quem quer sair do zero e começar a testar de verdade",
+              features: ["⚡ Criação em escala inicial", "🎯 Mais testes = mais chances de vender", "💰 Baixo custo por criativo", "⚡ Acesso imediato"],
+              cta: "COMEÇAR COM O BÁSICO",
+            },
+            {
+              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true,
+              tagline: "Para quem quer performance e consistência",
+              features: ["🔥 Melhor custo-benefício", "⚡ Volume + velocidade de execução", "📈 Acelera validação de campanhas", "💰 Custo ainda mais baixo por criativo", "⚡ Acesso imediato"],
+              cta: "ESCALAR COM O PRO",
+            },
+            {
+              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false,
+              tagline: "Para quem quer dominar o jogo dos criativos",
+              features: ["💰 Menor custo por criativo", "🚀 Máxima produtividade", "🧠 Liberdade total para testar", "📈 Valide ofertas 10x mais rápido", "⚡ Acesso imediato"],
+              cta: "QUERO ESCALAR AO MÁXIMO",
+            },
+          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta }) => (
             <div
               key={name}
-              className={`gradient-card rounded-2xl p-7 border shadow-card flex flex-col items-center text-center relative ${
+              className={`gradient-card rounded-2xl p-7 border shadow-card flex flex-col relative ${
                 highlight ? "border-primary shadow-glow" : "border-border"
               }`}
             >
@@ -267,21 +287,30 @@ const Index = () => {
                   Mais popular
                 </div>
               )}
-              <span className="text-3xl mb-3">{emoji}</span>
-              <h3 className="font-display text-foreground text-lg mb-1">Pacote {name}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{credits} créditos</p>
-              <p className="text-2xl font-display text-foreground mb-1">{price}</p>
-              {perUnit && (
-                <p className="text-xs text-muted-foreground mb-6">({perUnit})</p>
-              )}
-              {!perUnit && <div className="mb-6" />}
+              <div className="text-center mb-4">
+                <span className="text-3xl mb-2 block">{emoji}</span>
+                <h3 className="font-display text-foreground text-lg mb-1">Pacote {name}</h3>
+                <p className="text-sm text-muted-foreground">{credits} créditos</p>
+              </div>
+              <div className="text-center mb-4">
+                <p className="text-2xl font-display text-foreground">{price}</p>
+                {perUnit && (
+                  <p className="text-xs text-muted-foreground mt-1">({perUnit})</p>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center italic mb-5">💬 {tagline}</p>
+              <div className="space-y-2 mb-6 flex-1">
+                {features.map((f) => (
+                  <p key={f} className="text-sm text-muted-foreground">{f}</p>
+                ))}
+              </div>
               <Button
                 variant={highlight ? "hero" : "outline"}
                 size="sm"
                 className="w-full"
                 onClick={() => navigate("/auth")}
               >
-                {name === "Free" ? "Testar grátis" : "Escolher"}
+                👉 {cta}
               </Button>
             </div>
           ))}
