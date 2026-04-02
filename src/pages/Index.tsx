@@ -76,6 +76,9 @@ const Index = () => {
 
       {/* DOBRA 2 — Dor */}
       <section className="max-w-4xl mx-auto px-4 py-20">
+        <h2 className="text-2xl md:text-3xl font-display text-foreground mb-10 text-center">
+          Você já <span className="text-gradient">pensou isso</span>?
+        </h2>
         <div className="gradient-card rounded-2xl p-8 md:p-12 border border-border shadow-card">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
             {[
