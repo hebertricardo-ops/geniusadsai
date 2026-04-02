@@ -338,8 +338,6 @@ const Index = () => {
               >
                 {cta}
               </Button>
-                {cta}
-              </Button>
             </div>
           ))}
         </div>
