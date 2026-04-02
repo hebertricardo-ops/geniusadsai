@@ -254,7 +254,7 @@ const Index = () => {
             {
               name: "Free", emoji: "🆓", credits: 4, price: "R$ 0,00", perUnit: null, highlight: false,
               tagline: "Para quem quer testar antes de investir",
-              features: ["⚡ Acesso imediato", "💸 100% gratuito", "🚀 Sem compromisso"],
+              features: ["Acesso imediato", "100% gratuito", "Sem compromisso"],
               cta: "COMEÇAR GRÁTIS",
             },
             {
