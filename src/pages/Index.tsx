@@ -266,7 +266,7 @@ const Index = () => {
             {
               name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true,
               tagline: "Para quem quer performance e consistência",
-              features: ["🔥 Melhor custo-benefício", "⚡ Volume + velocidade de execução", "📈 Acelera validação de campanhas", "💰 Custo ainda mais baixo por criativo", "⚡ Acesso imediato"],
+              features: ["Melhor custo-benefício", "Volume + velocidade de execução", "Acelera validação de campanhas", "Custo ainda mais baixo por criativo", "Acesso imediato"],
               cta: "ESCALAR COM O PRO",
             },
             {
