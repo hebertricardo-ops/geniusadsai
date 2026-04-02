@@ -42,7 +42,8 @@ const App = () => (
             <Route path="/history" element={<ProtectedWithLayout><History /></ProtectedWithLayout>} />
             <Route path="/regenerate" element={<ProtectedWithLayout><RegenerateCreative /></ProtectedWithLayout>} />
             <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
-            <Route path="/payment-success" element={<ProtectedWithLayout><PaymentSuccess /></ProtectedWithLayout>} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
