@@ -12,6 +12,7 @@ import {
 import logoIcon from "@/assets/logo-icon.png";
 import logoText from "@/assets/logo-text.png";
 import heroShowcase from "@/assets/hero-showcase.jpeg";
+import mockupImage from "@/assets/mockup_lp_1.png";
 import {
   Accordion,
   AccordionContent,
@@ -287,6 +288,16 @@ const Index = () => {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Mockup Image */}
+      <section className="max-w-5xl mx-auto px-4 pt-20 pb-8 flex justify-center">
+        <img
+          src={mockupImage}
+          alt="Genius ADS - Plataforma em dispositivos"
+          className="max-w-full md:max-w-2xl lg:max-w-3xl h-auto"
+          loading="lazy"
+        />
       </section>
 
       {/* DOBRA 7 — Preços */}
