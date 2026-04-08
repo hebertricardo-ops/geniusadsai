@@ -116,30 +116,12 @@ const CreateCreative = () => {
       setSelectedAngle(null);
       setSelectedVisual(null);
 
-      // 4. Deduct credits
-      await supabase
-        .from("user_credits")
-        .update({
-          credits_balance: (credits?.credits_balance ?? 0) - quantity,
-          credits_used: (credits?.credits_used ?? 0) + quantity,
-        })
-        .eq("user_id", user.id);
-
-      // 5. Log transaction
-      await supabase.from("credit_transactions").insert({
-        user_id: user.id,
-        type: "usage",
-        amount: -quantity,
-        description: `Geração de criativos: ${productName}`,
-      });
-
-      // 6. Update request status
+      // Update request status (copy generated, no credits debited yet - credits only on image generation)
       await supabase
         .from("creative_requests")
         .update({ status: "completed" })
         .eq("id", request.id);
 
-      queryClient.invalidateQueries({ queryKey: ["credits"] });
       queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
       toast({ title: "Copies geradas!", description: "Escolha seu ângulo e opção visual." });
