@@ -86,6 +86,7 @@ const CreateCarousel = () => {
   const [slideStates, setSlideStates] = useState<SlideState[]>([]);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [isCreditsDialogOpen, setIsCreditsDialogOpen] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
