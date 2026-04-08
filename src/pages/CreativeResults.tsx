@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2, RefreshCw } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2, RefreshCw, Copy, MessageSquare } from "lucide-react";
 
 const CreativeResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
