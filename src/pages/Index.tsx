@@ -59,6 +59,19 @@ const Index = () => {
           </Button>
         </div>
 
+        {/* Video */}
+        <div className="max-w-3xl mx-auto mb-14 animate-fade-in">
+          <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-border/50" style={{ paddingBottom: '56.25%' }}>
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src="https://www.youtube.com/embed/XsivhOx4Q0Q"
+              title="Genius ADS - Demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+
         {/* Benefícios grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto animate-fade-in">
           {[
