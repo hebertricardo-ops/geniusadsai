@@ -64,7 +64,7 @@ const Index = () => {
           <img
             src={heroShowcase}
             alt="Genius ADS - Plataforma de geração de criativos com IA"
-            className="w-full max-w-4xl mx-auto rounded-2xl shadow-2xl"
+            className="w-full max-w-2xl lg:max-w-3xl mx-auto rounded-2xl shadow-2xl"
             loading="lazy"
           />
         </div>
