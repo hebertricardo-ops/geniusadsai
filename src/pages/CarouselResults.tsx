@@ -126,6 +126,7 @@ const CarouselResults = () => {
           carousel_style_reference: visualContext?.carousel_style_reference || request.creative_style || "clean premium tecnológico",
           use_ai_image: state.useAiImage,
           existing_slide_urls: existingSlideUrls,
+          typography_style: visualContext?.typography_style || "sans-serif geométrica (Montserrat ou similar)",
         },
       });
       if (error) throw error;
