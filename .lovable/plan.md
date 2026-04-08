@@ -1,67 +1,63 @@
 
 
-## Plan: Generate Missing Slide Images from Carousel Results Page
+## Plan: Enforce Font Consistency Across Carousel Slides
 
 ### Problem
-When a carousel has slides without images (partial generation or copy_ready status), the user must go back to the creation flow to generate them. We need to allow generating missing slide images directly from the CarouselResults page while maintaining visual consistency.
+Slides 2, 4 and 5 of the last carousel were generated with different font-family styles than the remaining slides. Since Vertex AI generates each slide image independently, there's no built-in mechanism to enforce the same typography across all slides.
 
-### Approach
+### Root Cause
+The current prompts mention "tipografia legível" and "consistência visual" but never specify a concrete font-family or typographic style. Vertex AI interprets this loosely, choosing different fonts per slide.
 
-#### 1. Store Visual Context in carousel_requests
-Add a `visual_context` JSONB column to `carousel_requests` to persist the style, reference image URLs, and product context at creation time. This ensures slides generated later use the same visual parameters.
+### Solution
+Add explicit, rigid typography instructions to both image generation phases (batch `images` and `single-image`) that lock the font to a single named style and describe it precisely enough for Vertex AI to replicate consistently.
 
-**Migration:**
-```sql
-ALTER TABLE carousel_requests 
-ADD COLUMN visual_context jsonb DEFAULT NULL;
+### Changes
+
+#### 1. Edge Function — `supabase/functions/generate-carousel/index.ts`
+
+**Both `handleImagesPhase` and `handleSingleImagePhase`** — add a dedicated `tipografia` block to the JSON prompt (alongside `instrucoes_de_composicao`):
+
+```json
+"tipografia": {
+  "regra_principal": "TODOS os slides do carrossel DEVEM usar EXATAMENTE a mesma fonte/estilo tipográfico. Consistência tipográfica é OBRIGATÓRIA.",
+  "headline": "sans-serif geométrica bold (estilo Montserrat Bold ou similar). Todas as headlines devem usar a MESMA fonte em TODOS os slides.",
+  "subtexto": "sans-serif regular/light (estilo Montserrat Regular ou similar). Todos os subtextos devem usar a MESMA fonte em TODOS os slides.",
+  "cta": "mesma família tipográfica do headline, em bold ou semibold",
+  "proibicoes": [
+    "PROIBIDO usar fontes serifadas em qualquer slide",
+    "PROIBIDO variar o estilo tipográfico entre slides",
+    "PROIBIDO usar fontes manuscritas, cursivas ou decorativas",
+    "PROIBIDO misturar famílias tipográficas diferentes entre slides"
+  ]
+}
 ```
 
-#### 2. Save Visual Context During Creation (CreateCarousel.tsx)
-After copy generation succeeds and the carousel request is saved, also store the `visual_context` object containing:
-- `creative_style` (selected style)
-- `image_urls` (uploaded reference image URLs)
-- `product_name`
-- `carousel_style_reference`
+Also add to the `instrucoes_de_composicao` array:
+- `"TIPOGRAFIA: usar EXATAMENTE a mesma fonte sans-serif geométrica bold para headlines e sans-serif regular para subtextos em TODOS os slides. NÃO variar a font-family entre slides."`
 
-This happens once at copy generation time, so all future image generations reference the same visual parameters.
+**When `existing_slide_urls` are provided** (generating a missing slide later), reinforce:
+- `"COPIAR EXATAMENTE a mesma tipografia (font-family, peso, tamanho relativo) dos slides de referência já gerados. A fonte deve ser idêntica."`
 
-#### 3. Add "Generate Image" Button on CarouselResults Page
-For each slide without an image (`!currentCreative`), show a "Gerar Imagem (1 crédito)" button. Also add an "Upload" vs "Gerar com IA" toggle, mirroring the CreateCarousel flow.
+#### 2. Visual Context Enhancement — `src/pages/CreateCarousel.tsx`
 
-**Key UI additions in CarouselResults.tsx:**
-- Import `useCredits`, `useQueryClient`, `ImageUpload`, and relevant icons
-- Add state for `generatingSlides` (tracks which slide indices are loading) and `slideOptions` (upload vs AI per slide)
-- On the slide detail panel (right side), when no image exists, render the toggle + generate button
-- On thumbnails, show a "+" overlay for missing slides
-
-#### 4. Generate Image Handler in CarouselResults
-Create `handleGenerateSlideImage(slideIndex)` that:
-1. Reads `visual_context` from the carousel request (style, reference images)
-2. Calls `supabase.functions.invoke("generate-carousel", { phase: "single-image", ... })` with the same parameters used during creation
-3. Saves the result to `generated_creatives`
-4. Deducts 1 credit (fresh fetch pattern)
-5. Logs the credit transaction
-6. Invalidates queries to refresh the UI
-7. If all slides now have images, updates request status to "completed"
-
-#### 5. Visual Consistency Mechanisms
-- **Stored reference images**: The `visual_context.image_urls` are persisted so the same references are sent to Vertex AI regardless of when generation happens
-- **Stored style**: `creative_style` is locked at creation time
-- **Existing prompt instructions**: The edge function already includes "manter consistência visual com os outros slides do carrossel" and the `estilo_global_do_carrossel` block
-- **Pass existing slide images as additional context**: When generating a missing slide, also send 1-2 already-generated slide image URLs as extra visual references so Vertex AI can match the established look
-
-#### 6. Enhanced Edge Function (generate-carousel/index.ts)
-Add support for an optional `existing_slide_urls` parameter in the `single-image` phase. When provided, these are included as additional reference images alongside the original product references, giving Vertex AI concrete visual examples of the carousel's established style.
-
-Add a new instruction in the prompt:
+When saving the `visual_context` object, also store a `typography_style` field:
+```ts
+typography_style: "sans-serif geométrica (Montserrat ou similar)"
 ```
-"REFERÊNCIA DE ESTILO: as imagens de referência incluem slides já gerados deste carrossel. 
-Mantenha EXATAMENTE a mesma paleta de cores, estilo tipográfico, elementos decorativos e composição visual."
-```
+
+This way, when generating missing slides from the results page, the stored typography preference is sent to the edge function.
+
+#### 3. Results Page — `src/pages/CarouselResults.tsx`
+
+When calling `generate-carousel` for a missing slide, pass the `typography_style` from `visual_context` so it gets included in the prompt.
 
 ### Files to Modify
-1. **Migration** — Add `visual_context` column to `carousel_requests`
-2. **src/pages/CreateCarousel.tsx** — Save `visual_context` when creating the request
-3. **src/pages/CarouselResults.tsx** — Add generate UI + handler for missing slides
-4. **supabase/functions/generate-carousel/index.ts** — Accept `existing_slide_urls` for style consistency
+1. **`supabase/functions/generate-carousel/index.ts`** — Add `tipografia` block + reinforce font instructions in both image generation phases
+2. **`src/pages/CreateCarousel.tsx`** — Store `typography_style` in `visual_context`
+3. **`src/pages/CarouselResults.tsx`** — Pass `typography_style` when generating missing slides
+
+### Impact
+- No layout changes
+- No database migration needed (uses existing JSONB column)
+- Prompts become significantly more prescriptive about font consistency
 
