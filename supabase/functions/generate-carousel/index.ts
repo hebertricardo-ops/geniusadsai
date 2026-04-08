@@ -7,6 +7,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── IMAGE PROVIDER TOGGLE ───
+// "fal" = fal.ai nano-banana-pro/edit (primary)
+// "vertex" = Vertex AI gemini-3-pro-image-preview (standby)
+const IMAGE_PROVIDER: "fal" | "vertex" = "fal";
+
 function base64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let binary = "";
@@ -76,6 +81,158 @@ async function imageUrlToBase64(url: string): Promise<{ mimeType: string; data: 
   const base64 = btoa(binary);
   const contentType = res.headers.get("content-type") || "image/png";
   return { mimeType: contentType.split(";")[0], data: base64 };
+}
+
+// ─── FAL.AI INTEGRATION ───
+
+function buildFalPrompt(slide: any, product_name: string, creative_style: string, numSlides: number, typographyStyle: string, existingSlideUrls?: string[], useAiImage?: boolean): string {
+  const lines: string[] = [
+    `Crie um slide de carrossel publicitário no formato 1:1 (quadrado).`,
+    `Produto: ${product_name}`,
+    `Estilo visual: ${creative_style || "clean premium tecnológico"}`,
+    ``,
+    `--- CONTEÚDO DO SLIDE ---`,
+    `Slide ${slide.slide_number} de ${numSlides} — Função: ${slide.slide_role}`,
+    `Headline: ${slide.headline}`,
+    `Subtexto: ${slide.subtext}`,
+    slide.cta ? `CTA: ${slide.cta}` : "",
+    ``,
+    `--- TIPOGRAFIA (OBRIGATÓRIO) ---`,
+    `REGRA PRINCIPAL: TODOS os slides DEVEM usar EXATAMENTE a mesma fonte/estilo tipográfico.`,
+    `Estilo definido: ${typographyStyle}`,
+    `Headlines: sans-serif geométrica bold (estilo Montserrat Bold). MESMA fonte em TODOS os slides.`,
+    `Subtextos: sans-serif regular/light (estilo Montserrat Regular). MESMA fonte em TODOS os slides.`,
+    `CTA: mesma família tipográfica do headline, em bold ou semibold.`,
+    `PROIBIDO: fontes serifadas, manuscritas, cursivas ou decorativas. PROIBIDO variar a font-family entre slides.`,
+    ``,
+    `--- COMPOSIÇÃO ---`,
+    `OBRIGATÓRIO: renderizar os textos (headline, subtexto, cta) diretamente na imagem, em português do Brasil, com tipografia legível e bem posicionada.`,
+    `O headline deve ter destaque visual (maior, bold, contraste alto).`,
+    `O subtexto deve aparecer menor, abaixo do headline.`,
+    slide.cta ? `Renderizar CTA como botão ou destaque visual.` : "",
+    `Todos os textos em PORTUGUÊS DO BRASIL exatamente como fornecidos — não traduzir, não alterar.`,
+    `Design clean, premium e profissional.`,
+    `Background elaborado com elementos visuais contextuais.`,
+    `Efeitos tecnológicos: linhas geométricas, gradientes sutis, overlays.`,
+    `PROIBIDO: NÃO incluir numeração de slide (ex: 1/6, 2/8).`,
+    slide.slide_role === "gancho" ? "Visual chamativo e impactante para prender atenção." : "",
+    slide.slide_role === "cta" ? "Visual de fechamento com destaque para call-to-action." : "",
+    existingSlideUrls?.length ? "REFERÊNCIA DE ESTILO: COPIAR EXATAMENTE a mesma tipografia, paleta de cores, elementos decorativos e composição visual dos slides de referência. A fonte deve ser idêntica." : "",
+    useAiImage ? `GERAÇÃO DE IMAGEM COM IA: crie elementos visuais, ilustrações e cenários que representem o conceito do slide. Contexto: ${product_name}. Função: ${slide.slide_role}.` : "",
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+
+async function generateSlideWithFal(
+  prompt: string,
+  referenceImageUrls: string[],
+): Promise<string> {
+  const FAL_KEY = Deno.env.get("FAL_KEY");
+  if (!FAL_KEY) throw new Error("FAL_KEY not configured");
+
+  const falInput: any = {
+    prompt,
+    aspect_ratio: "1:1",
+  };
+  if (referenceImageUrls.length > 0) {
+    falInput.image_urls = referenceImageUrls;
+  }
+
+  console.log("[fal.ai] Submitting request to queue...");
+
+  // Step 1: Submit to queue
+  const submitRes = await fetch("https://queue.fal.run/fal-ai/nano-banana-pro/edit", {
+    method: "POST",
+    headers: {
+      Authorization: `Key ${FAL_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(falInput),
+  });
+
+  if (!submitRes.ok) {
+    const errText = await submitRes.text();
+    throw new Error(`fal.ai submit error (${submitRes.status}): ${errText.substring(0, 500)}`);
+  }
+
+  const submitData = await submitRes.json();
+  const requestId = submitData.request_id;
+  if (!requestId) throw new Error("fal.ai did not return a request_id");
+
+  console.log(`[fal.ai] Request submitted: ${requestId}`);
+
+  // Step 2: Poll for completion
+  const maxAttempts = 60;
+  const pollInterval = 2000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, pollInterval));
+
+    const statusRes = await fetch(
+      `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}/status`,
+      { headers: { Authorization: `Key ${FAL_KEY}` } }
+    );
+
+    if (!statusRes.ok) {
+      console.warn(`[fal.ai] Status check failed (${statusRes.status}), retrying...`);
+      continue;
+    }
+
+    const statusData = await statusRes.json();
+    console.log(`[fal.ai] Status: ${statusData.status} (attempt ${i + 1}/${maxAttempts})`);
+
+    if (statusData.status === "COMPLETED") {
+      break;
+    } else if (statusData.status === "FAILED") {
+      throw new Error(`fal.ai generation failed: ${JSON.stringify(statusData)}`);
+    }
+    // IN_QUEUE or IN_PROGRESS — keep polling
+  }
+
+  // Step 3: Retrieve result
+  const resultRes = await fetch(
+    `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}`,
+    { headers: { Authorization: `Key ${FAL_KEY}` } }
+  );
+
+  if (!resultRes.ok) {
+    const errText = await resultRes.text();
+    throw new Error(`fal.ai result error (${resultRes.status}): ${errText.substring(0, 500)}`);
+  }
+
+  const resultData = await resultRes.json();
+  
+  // Extract image URL from fal.ai response
+  const imageUrl = resultData?.images?.[0]?.url || resultData?.image?.url || resultData?.output?.images?.[0]?.url;
+  if (!imageUrl) {
+    console.error("[fal.ai] Unexpected response structure:", JSON.stringify(resultData).substring(0, 500));
+    throw new Error("No image URL in fal.ai response");
+  }
+
+  console.log(`[fal.ai] Image generated: ${imageUrl.substring(0, 80)}...`);
+  return imageUrl;
+}
+
+async function downloadAndUploadToStorage(
+  imageUrl: string,
+  supabaseAdmin: any,
+): Promise<string> {
+  const res = await fetch(imageUrl);
+  if (!res.ok) throw new Error(`Failed to download fal.ai image: ${res.status}`);
+
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  const contentType = res.headers.get("content-type") || "image/png";
+  const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "png";
+  const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabaseAdmin.storage
+    .from("generated-creatives")
+    .upload(fileName, bytes, { contentType, upsert: false });
+  if (error) throw new Error(`Storage upload failed: ${error.message}`);
+
+  const { data: urlData } = supabaseAdmin.storage.from("generated-creatives").getPublicUrl(fileName);
+  return urlData.publicUrl;
 }
 
 // ─── SYSTEM PROMPT FOR COPY GENERATION ───
@@ -289,18 +446,111 @@ Agora gere a copy completa do carrossel.`;
 // PHASE 2: Generate images from approved copy (slow)
 // ═══════════════════════════════════════════════════════
 async function handleImagesPhase(body: any) {
-  const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-  const saJson = JSON.parse(saJsonRaw);
-
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { image_urls, copy, product_name, creative_style, slides_count } = body;
   if (!copy?.slides?.length) throw new Error("Missing approved copy data");
 
   const numSlides = copy.slides.length;
-  console.log("Phase 2 (images): Generating", numSlides, "slide images via Vertex AI...");
+  const typographyStyle = body.typography_style || "sans-serif geométrica (Montserrat ou similar)";
+
+  console.log(`Phase 2 (images): Generating ${numSlides} slide images via ${IMAGE_PROVIDER}...`);
+
+  if (IMAGE_PROVIDER === "fal") {
+    return await handleImagesWithFal(copy, image_urls || [], product_name, creative_style, numSlides, typographyStyle, supabaseAdmin);
+  } else {
+    return await handleImagesWithVertex(body, copy, image_urls, product_name, creative_style, numSlides, supabaseAdmin);
+  }
+}
+
+// ─── FAL.AI batch image generation ───
+async function handleImagesWithFal(
+  copy: any,
+  imageUrls: string[],
+  productName: string,
+  creativeStyle: string,
+  numSlides: number,
+  typographyStyle: string,
+  supabaseAdmin: any,
+) {
+  const generatedSlides: Array<{ slide_number: number; image_url: string }> = [];
+  const failedSlides: number[] = [];
+
+  for (let i = 0; i < copy.slides.length; i++) {
+    const slide = copy.slides[i];
+    let success = false;
+    let lastError = "";
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = 5000 * attempt;
+          console.log(`[fal.ai] Retry ${attempt} for slide ${i + 1}, waiting ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+
+        const startTime = Date.now();
+        const prompt = buildFalPrompt(slide, productName, creativeStyle, numSlides, typographyStyle);
+        const falImageUrl = await generateSlideWithFal(prompt, imageUrls);
+        const storageUrl = await downloadAndUploadToStorage(falImageUrl, supabaseAdmin);
+
+        generatedSlides.push({ slide_number: slide.slide_number, image_url: storageUrl });
+        success = true;
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[fal.ai] Slide ${i + 1}/${numSlides} generated in ${elapsed}s`);
+
+        // Small delay between slides
+        if (i < copy.slides.length - 1) {
+          await new Promise(r => setTimeout(r, 2000));
+        }
+        break;
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e);
+        console.error(`[fal.ai] Slide ${i + 1} attempt ${attempt + 1} failed:`, lastError);
+      }
+    }
+
+    if (!success) {
+      console.error(`[fal.ai] Slide ${i + 1} failed permanently: ${lastError}`);
+      failedSlides.push(i);
+    }
+  }
+
+  if (generatedSlides.length === 0) {
+    return new Response(
+      JSON.stringify({ error: "Todas as imagens falharam. Tente novamente em alguns minutos.", fallback: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const failedCount = copy.slides.length - generatedSlides.length;
+  console.log(`[fal.ai] Generated ${generatedSlides.length}/${numSlides} slides (${failedCount} failed)`);
+
+  return new Response(
+    JSON.stringify({
+      slides: generatedSlides,
+      partial: failedCount > 0,
+      failed_count: failedCount,
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// ─── VERTEX AI batch image generation (standby) ───
+async function handleImagesWithVertex(
+  body: any,
+  copy: any,
+  image_urls: string[],
+  product_name: string,
+  creative_style: string,
+  numSlides: number,
+  supabaseAdmin: any,
+) {
+  const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+  const saJson = JSON.parse(saJsonRaw);
 
   const accessToken = await getAccessToken(saJson);
 
@@ -316,7 +566,6 @@ async function handleImagesPhase(body: any) {
   }
 
   const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
-  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const generateSlideImage = async (slide: any, index: number) => {
     const slidePrompt = JSON.stringify({
@@ -393,7 +642,6 @@ async function handleImagesPhase(body: any) {
     throw new Error(`No image in Vertex AI response for slide ${index + 1}`);
   };
 
-  // Generate slide images sequentially to avoid rate limits
   const generatedImages: Array<{ base64: string; mimeType: string; index: number } | null> = [];
   for (let i = 0; i < copy.slides.length; i++) {
     const slide = copy.slides[i];
@@ -440,7 +688,6 @@ async function handleImagesPhase(body: any) {
     );
   }
 
-  // Upload to storage
   console.log("Uploading", successfulImages.length, "slide images to storage...");
   const slideResults = await Promise.all(
     successfulImages.map(async (img) => {
@@ -464,7 +711,7 @@ async function handleImagesPhase(body: any) {
   console.log(`Generated ${slideResults.length}/${copy.slides.length} slide images (${failedCount} failed)`);
 
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       slides: slideResults,
       partial: failedCount > 0,
       failed_count: failedCount,
@@ -477,30 +724,105 @@ async function handleImagesPhase(body: any) {
 // PHASE 3: Generate a SINGLE slide image (no batch)
 // ═══════════════════════════════════════════════════════
 async function handleSingleImagePhase(body: any) {
-  const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-  const saJson = JSON.parse(saJsonRaw);
-
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference, use_ai_image, existing_slide_urls } = body;
   if (!slide || !slide.headline) throw new Error("Missing slide data");
 
-  console.log(`Single-image: Generating slide ${slide.slide_number}/${total_slides || "?"} - ${slide.slide_role}`);
+  const typographyStyle = body.typography_style || "sans-serif geométrica (Montserrat ou similar)";
+
+  console.log(`Single-image: Generating slide ${slide.slide_number}/${total_slides || "?"} via ${IMAGE_PROVIDER}`);
+
+  if (IMAGE_PROVIDER === "fal") {
+    return await handleSingleImageWithFal(body, slide, image_urls, product_name, creative_style, total_slides, existing_slide_urls, use_ai_image, typographyStyle, supabaseAdmin);
+  } else {
+    return await handleSingleImageWithVertex(body, slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference, use_ai_image, existing_slide_urls, typographyStyle, supabaseAdmin);
+  }
+}
+
+// ─── FAL.AI single image generation ───
+async function handleSingleImageWithFal(
+  body: any,
+  slide: any,
+  imageUrls: string[],
+  productName: string,
+  creativeStyle: string,
+  totalSlides: number,
+  existingSlideUrls: string[],
+  useAiImage: boolean,
+  typographyStyle: string,
+  supabaseAdmin: any,
+) {
+  const allRefUrls = [...(imageUrls || [])];
+  if (existingSlideUrls?.length) {
+    allRefUrls.push(...existingSlideUrls.slice(0, 2));
+  }
+
+  let lastError = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = 5000 * attempt;
+        console.log(`[fal.ai] Retry ${attempt} for slide ${slide.slide_number}, waiting ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+
+      const startTime = Date.now();
+      const prompt = buildFalPrompt(slide, productName, creativeStyle, totalSlides || 1, typographyStyle, existingSlideUrls, useAiImage);
+      const falImageUrl = await generateSlideWithFal(prompt, allRefUrls);
+      const storageUrl = await downloadAndUploadToStorage(falImageUrl, supabaseAdmin);
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[fal.ai] Slide ${slide.slide_number} generated in ${elapsed}s`);
+
+      return new Response(
+        JSON.stringify({ image_url: storageUrl, slide_number: slide.slide_number }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+      console.error(`[fal.ai] Slide ${slide.slide_number} attempt ${attempt + 1} failed:`, lastError);
+    }
+  }
+
+  return new Response(
+    JSON.stringify({
+      error: `Falha ao gerar slide ${slide.slide_number}: ${lastError}`,
+      fallback: false,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// ─── VERTEX AI single image generation (standby) ───
+async function handleSingleImageWithVertex(
+  body: any,
+  slide: any,
+  image_urls: string[],
+  product_name: string,
+  creative_style: string,
+  total_slides: number,
+  carousel_style_reference: string,
+  use_ai_image: boolean,
+  existing_slide_urls: string[],
+  typographyStyle: string,
+  supabaseAdmin: any,
+) {
+  const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+  const saJson = JSON.parse(saJsonRaw);
 
   const accessToken = await getAccessToken(saJson);
 
   let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
   const allRefUrls = [...(image_urls || [])];
-  
-  // Add existing slide images as style references (max 2 to avoid quota issues)
   if (existing_slide_urls?.length) {
     const styleRefs = existing_slide_urls.slice(0, 2);
     allRefUrls.push(...styleRefs);
     console.log("Including", styleRefs.length, "existing slide(s) as style reference");
   }
-  
   if (allRefUrls.length) {
     console.log("Converting", allRefUrls.length, "reference images to base64...");
     imagesParts = await Promise.all(
@@ -512,11 +834,7 @@ async function handleSingleImagePhase(body: any) {
   }
 
   const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
-  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
   const styleRef = carousel_style_reference || creative_style || "clean premium tecnológico";
-
-  const typographyStyle = body.typography_style || "sans-serif geométrica (Montserrat ou similar)";
 
   const slidePrompt = JSON.stringify({
     tipo: "slide_de_carrossel_publicitario",
@@ -576,7 +894,6 @@ async function handleSingleImagePhase(body: any) {
     generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "1:1" } },
   };
 
-  // Retry logic for single image
   let lastError: string | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -612,7 +929,6 @@ async function handleSingleImagePhase(body: any) {
 
       if (!imageData) throw new Error("No image in Vertex AI response");
 
-      // Upload to storage
       const ext = imageData.mimeType.includes("jpeg") || imageData.mimeType.includes("jpg") ? "jpg" : "png";
       const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
       const binaryStr = atob(imageData.base64);
@@ -639,7 +955,7 @@ async function handleSingleImagePhase(body: any) {
     }
   }
 
-  const isQuotaError = lastError.includes("429") || lastError.includes("RESOURCE_EXHAUSTED");
+  const isQuotaError = lastError!.includes("429") || lastError!.includes("RESOURCE_EXHAUSTED");
   return new Response(
     JSON.stringify({
       error: isQuotaError
