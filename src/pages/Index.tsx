@@ -261,24 +261,24 @@ const Index = () => {
               cta: "COMEÇAR GRÁTIS",
             },
             {
-              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false, packageId: "basico",
+              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false, packageId: "basico", checkoutUrl: "https://pay.hotmart.com/E105290250P?off=1lncai6a&checkoutMode=10",
               tagline: "Para quem quer sair do zero e começar a testar de verdade",
               features: ["Criação em escala inicial", "Mais testes = mais chances de vender", "Baixo custo por criativo", "Acesso imediato"],
               cta: "COMEÇAR COM O BÁSICO",
             },
             {
-              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true, packageId: "pro",
+              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true, packageId: "pro", checkoutUrl: "https://pay.hotmart.com/E105290250P?off=0eczkuvh&checkoutMode=10",
               tagline: "Para quem quer performance e consistência",
               features: ["Melhor custo-benefício", "Volume + velocidade de execução", "Acelera validação de campanhas", "Custo ainda mais baixo por criativo", "Acesso imediato"],
               cta: "ESCALAR COM O PRO",
             },
             {
-              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false, packageId: "plus",
+              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false, packageId: "plus", checkoutUrl: "https://pay.hotmart.com/E105290250P?off=p12z4pm0&checkoutMode=10",
               tagline: "Para quem quer dominar o jogo dos criativos",
               features: ["Menor custo por criativo", "Máxima produtividade", "Liberdade total para testar", "Valide ofertas 10x mais rápido", "Acesso imediato"],
               cta: "QUERO ESCALAR AO MÁXIMO",
             },
-          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta, packageId }) => (
+          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta, packageId, checkoutUrl }) => (
             <div
               key={name}
               className={`gradient-card rounded-2xl p-7 border shadow-card flex flex-col relative ${
@@ -311,22 +311,13 @@ const Index = () => {
                 variant="hero"
                 size="sm"
                 className="w-full text-xs whitespace-normal text-center leading-tight py-2"
-                onClick={async () => {
+                onClick={() => {
                   if (packageId === "free") {
                     navigate("/auth");
                     return;
                   }
-                  try {
-                    const { data, error } = await supabase.functions.invoke("create-checkout", {
-                      body: { packageId },
-                    });
-                    if (error) throw error;
-                    if (data?.url) {
-                      window.location.href = data.url;
-                    }
-                  } catch (err: any) {
-                    toast.error("Erro ao iniciar pagamento. Tente novamente.");
-                    console.error(err);
+                  if (checkoutUrl) {
+                    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
                   }
                 }}
               >
