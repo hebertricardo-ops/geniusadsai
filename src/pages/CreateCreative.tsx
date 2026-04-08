@@ -56,6 +56,7 @@ const CreateCreative = () => {
   const [creativeStyle, setCreativeStyle] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generatingCreative, setGeneratingCreative] = useState(false);
+  const [isCreditsDialogOpen, setIsCreditsDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
