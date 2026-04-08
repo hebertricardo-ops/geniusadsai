@@ -491,24 +491,28 @@ async function handleSingleImagePhase(body: any) {
   const slidePrompt = JSON.stringify({
     tipo: "slide_de_carrossel_publicitario",
     formato: "1:1",
-    idioma_textos: "português do Brasil",
-    slide_info: {
-      numero: slide.slide_number,
-      funcao: slide.slide_role,
-      headline: slide.headline,
-      subtexto: slide.subtext,
-      cta: slide.cta || null,
-    },
+    idioma: "português do Brasil",
     produto: product_name,
     estilo_global_do_carrossel: {
       estilo: styleRef,
       instrucao: "Este slide faz parte de um carrossel. Mantenha a mesma paleta de cores, estilo de fundo, tipografia visual e elementos decorativos consistentes com os demais slides do carrossel.",
       total_slides: total_slides || 1,
     },
-    instrucoes: [
+    conteudo_do_slide: {
+      numero: slide.slide_number,
+      funcao: slide.slide_role,
+      texto_headline: slide.headline,
+      texto_subtexto: slide.subtext,
+      texto_cta: slide.cta || null,
+    },
+    instrucoes_de_composicao: [
+      "OBRIGATÓRIO: renderizar os textos fornecidos (headline, subtexto, cta) diretamente na imagem do slide, em português do Brasil, com tipografia legível e bem posicionada",
+      "o headline deve ter destaque visual (maior, bold, contraste alto)",
+      "o subtexto deve aparecer menor, abaixo do headline",
+      "se houver CTA, renderizar como botão ou destaque visual no slide",
+      "todos os textos devem estar em PORTUGUÊS DO BRASIL exatamente como fornecidos — não traduzir, não alterar",
       "criar um slide visualmente impactante para carrossel de anúncio",
       "usar as imagens de referência como base visual quando fornecidas",
-      "NÃO renderizar texto na imagem — apenas compor o visual/layout",
       "manter design clean, premium e profissional",
       "garantir que o slide funcione bem em sequência com os demais",
       "criar background elaborado com elementos visuais contextuais",
