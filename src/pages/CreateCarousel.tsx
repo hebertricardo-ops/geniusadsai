@@ -48,6 +48,8 @@ interface SlideState {
   loading: boolean;
   imageUrl: string | null;
   extraImages: File[];
+  aiPrompt: string;
+  useAiImage: boolean;
 }
 
 const ROLE_COLORS: Record<string, string> = {
