@@ -76,6 +76,7 @@ const CreateCarousel = () => {
   const [carouselObjective, setCarouselObjective] = useState(prefill?.carousel_objective ?? "vender diretamente");
   const [creativeStyle, setCreativeStyle] = useState(prefill?.creative_style ?? "");
   const [extraContext, setExtraContext] = useState(prefill?.extra_context ?? "");
+  const [carouselCta, setCarouselCta] = useState(prefill?.cta ?? "");
 
   // Phase states
   const [loadingCopy, setLoadingCopy] = useState(false);
