@@ -64,7 +64,7 @@ const Index = () => {
           <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-border/50" style={{ paddingBottom: '56.25%' }}>
             <iframe
               className="absolute inset-0 w-full h-full"
-              src="https://www.youtube.com/embed/XsivhOx4Q0Q"
+              src="https://www.youtube.com/embed/XsivhOx4Q0Q?controls=0&modestbranding=1&rel=0&showinfo=0"
               title="Genius ADS - Demo"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
