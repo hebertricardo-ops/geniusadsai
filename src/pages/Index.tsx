@@ -245,7 +245,7 @@ const Index = () => {
       </section>
 
       {/* DOBRA 6 — Para quem serve */}
-      <section className="max-w-4xl mx-auto px-4 py-16">
+      <section className="max-w-4xl mx-auto px-4 py-16 pb-[50px]">
         <h2 className="text-2xl md:text-3xl font-display text-foreground mb-12 text-center">
           Para quem <span className="text-gradient">serve</span>
         </h2>
@@ -301,7 +301,7 @@ const Index = () => {
       </section>
 
       {/* DOBRA 7 — Preços */}
-      <section className="max-w-5xl mx-auto px-4 py-20">
+      <section className="max-w-5xl mx-auto px-4 py-20 pt-[60px]">
         <h2 className="text-2xl md:text-3xl font-display text-foreground mb-12 text-center">
           Escolha seu <span className="text-gradient">pacote de créditos</span>
         </h2>
