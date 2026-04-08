@@ -223,6 +223,7 @@ export type Database = {
       }
       generated_creatives: {
         Row: {
+          carousel_request_id: string | null
           copy_data: Json | null
           created_at: string
           credits_used: number
@@ -233,6 +234,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          carousel_request_id?: string | null
           copy_data?: Json | null
           created_at?: string
           credits_used?: number
@@ -243,6 +245,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          carousel_request_id?: string | null
           copy_data?: Json | null
           created_at?: string
           credits_used?: number
@@ -253,6 +256,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "generated_creatives_carousel_request_id_fkey"
+            columns: ["carousel_request_id"]
+            isOneToOne: false
+            referencedRelation: "carousel_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "generated_creatives_request_id_fkey"
             columns: ["request_id"]
