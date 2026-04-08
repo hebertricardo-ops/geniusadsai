@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, ArrowLeft, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Copy, Info } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Copy, Info, ImageIcon, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 const CarouselResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
@@ -46,6 +47,17 @@ const CarouselResults = () => {
   const isLoading = loadingRequest || loadingCreatives;
   const resultData = request?.result_data as any;
   const slides = resultData?.slides || [];
+  const isCopyReady = request?.status === "copy_ready";
+  const isPartial = creatives.length > 0 && creatives.length < slides.length;
+
+  // Build merged slides: copy + image (if available)
+  const mergedSlides = slides.map((slide: any) => {
+    const creative = creatives.find((c) => {
+      const cd = c.copy_data as any;
+      return cd?.slide_number === slide.slide_number;
+    });
+    return { ...slide, creative };
+  });
 
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
@@ -65,9 +77,10 @@ const CarouselResults = () => {
   };
 
   const handleDownloadAll = async () => {
-    for (let i = 0; i < creatives.length; i++) {
-      await handleDownload(creatives[i].image_url, i);
-      if (i < creatives.length - 1) await new Promise((r) => setTimeout(r, 500));
+    const withImages = mergedSlides.filter((s: any) => s.creative);
+    for (let i = 0; i < withImages.length; i++) {
+      await handleDownload(withImages[i].creative.image_url, i);
+      if (i < withImages.length - 1) await new Promise((r) => setTimeout(r, 500));
     }
   };
 
@@ -100,7 +113,7 @@ const CarouselResults = () => {
     );
   }
 
-  if (!creatives.length) {
+  if (!slides.length) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
         <h2 className="text-xl font-display text-foreground mb-2">Nenhum slide encontrado</h2>
@@ -112,8 +125,10 @@ const CarouselResults = () => {
     );
   }
 
-  const currentCreative = creatives[currentSlide];
-  const currentSlideData = slides[currentSlide];
+  // Find first slide with an image for the viewer
+  const slidesWithImages = mergedSlides.filter((s: any) => s.creative);
+  const currentMerged = mergedSlides[currentSlide];
+  const currentCreative = currentMerged?.creative;
 
   return (
     <div>
@@ -121,10 +136,17 @@ const CarouselResults = () => {
         <div className="space-y-8 animate-fade-in">
           {/* Status */}
           <div className="text-center">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium">
-              <CheckCircle2 className="w-4 h-4" />
-              Carrossel gerado — {creatives.length} slide{creatives.length > 1 ? "s" : ""}
-            </span>
+            {isCopyReady || isPartial ? (
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium">
+                <AlertCircle className="w-4 h-4" />
+                {creatives.length}/{slides.length} slides com imagem gerada
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4" />
+                Carrossel completo — {creatives.length} slide{creatives.length > 1 ? "s" : ""}
+              </span>
+            )}
           </div>
 
           {/* Title & actions */}
@@ -134,16 +156,18 @@ const CarouselResults = () => {
                 <div>
                   <h2 className="text-xl font-display text-foreground">{resultData.carousel_title}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Objetivo: {resultData.objective} • {resultData.slides_count} slides • {resultData.credits_cost} créditos
+                    Objetivo: {resultData.objective} • {resultData.slides_count} slides
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleCopyAll}>
                     <Copy className="w-4 h-4" /> Copiar Copy
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleDownloadAll}>
-                    <Download className="w-4 h-4" /> Baixar Todos
-                  </Button>
+                  {slidesWithImages.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={handleDownloadAll}>
+                      <Download className="w-4 h-4" /> Baixar Todos
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -154,12 +178,17 @@ const CarouselResults = () => {
             {/* Image */}
             <div className="relative gradient-card rounded-2xl border border-border shadow-card overflow-hidden">
               <div className="aspect-square bg-black/20 flex items-center justify-center">
-                {currentCreative && (
+                {currentCreative ? (
                   <img
                     src={currentCreative.image_url}
                     alt={`Slide ${currentSlide + 1}`}
                     className="w-full h-full object-contain"
                   />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <ImageIcon className="w-12 h-12 opacity-30" />
+                    <p className="text-sm">Imagem não gerada</p>
+                  </div>
                 )}
               </div>
 
@@ -172,51 +201,60 @@ const CarouselResults = () => {
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                onClick={() => setCurrentSlide(Math.min(creatives.length - 1, currentSlide + 1))}
-                disabled={currentSlide === creatives.length - 1}
+                onClick={() => setCurrentSlide(Math.min(mergedSlides.length - 1, currentSlide + 1))}
+                disabled={currentSlide === mergedSlides.length - 1}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-background disabled:opacity-30 transition-all"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
 
               {/* Download single */}
-              <div className="absolute bottom-3 right-3">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => currentCreative && handleDownload(currentCreative.image_url, currentSlide)}
-                >
-                  <Download className="w-4 h-4" /> Baixar
-                </Button>
-              </div>
+              {currentCreative && (
+                <div className="absolute bottom-3 right-3">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleDownload(currentCreative.image_url, currentSlide)}
+                  >
+                    <Download className="w-4 h-4" /> Baixar
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Copy info */}
             <div className="space-y-4">
-              {currentSlideData && (
+              {currentMerged && (
                 <div className="gradient-card rounded-2xl p-6 border border-border shadow-card space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-primary uppercase tracking-wider">
-                      Slide {currentSlideData.slide_number} de {slides.length}
+                      Slide {currentMerged.slide_number} de {slides.length}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      {roleLabels[currentSlideData.slide_role?.toLowerCase()] || currentSlideData.slide_role}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                        {roleLabels[currentMerged.slide_role?.toLowerCase()] || currentMerged.slide_role}
+                      </span>
+                      {!currentCreative && (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-xs">
+                          Sem imagem
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   <div>
                     <h3 className="text-2xl font-display text-foreground leading-tight">
-                      {currentSlideData.headline}
+                      {currentMerged.headline}
                     </h3>
-                    {currentSlideData.subtext && (
-                      <p className="text-muted-foreground mt-2">{currentSlideData.subtext}</p>
+                    {currentMerged.subtext && (
+                      <p className="text-muted-foreground mt-2">{currentMerged.subtext}</p>
                     )}
                   </div>
 
-                  {currentSlideData.cta && (
+                  {currentMerged.cta && (
                     <div className="pt-2">
                       <span className="inline-block px-5 py-2.5 rounded-lg gradient-primary text-primary-foreground text-sm font-semibold">
-                        {currentSlideData.cta}
+                        {currentMerged.cta}
                       </span>
                     </div>
                   )}
@@ -226,7 +264,7 @@ const CarouselResults = () => {
                       <TooltipTrigger asChild>
                         <div className="flex items-start gap-2 text-sm text-muted-foreground cursor-help">
                           <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                          <p>{currentSlideData.strategy}</p>
+                          <p>{currentMerged.strategy}</p>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -241,9 +279,9 @@ const CarouselResults = () => {
 
           {/* Slide thumbnails */}
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {creatives.map((creative, idx) => (
+            {mergedSlides.map((slide: any, idx: number) => (
               <button
-                key={creative.id}
+                key={idx}
                 onClick={() => setCurrentSlide(idx)}
                 className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
                   currentSlide === idx
@@ -251,11 +289,17 @@ const CarouselResults = () => {
                     : "border-border hover:border-primary/40 opacity-60 hover:opacity-100"
                 }`}
               >
-                <img
-                  src={creative.image_url}
-                  alt={`Slide ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                {slide.creative ? (
+                  <img
+                    src={slide.creative.image_url}
+                    alt={`Slide ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
+                  </div>
+                )}
               </button>
             ))}
           </div>
