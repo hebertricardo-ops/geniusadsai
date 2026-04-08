@@ -1,43 +1,45 @@
 
 
-## Plan: Create `create-user-webhook` Edge Function
+## Plan: Create `check-user-exists` Edge Function
 
 ### What it does
-A webhook endpoint that Make.com calls after a Hotmart purchase. It creates a new user (if not existing) with the default password `123456` and adds the purchased credits. Existing users just get credits added. New users are flagged with `must_change_password: true` so the existing `/change-password` flow forces password change on first login.
+A simple endpoint that Make.com calls (before or after a Hotmart purchase) to check if a user already exists in the database by email. Returns the user's existence status and current credit balance, so Make.com can decide the next step in the automation flow (add credits to existing user vs. create new user via `create-user-webhook`).
 
 ### Technical details
 
-**1. Create `supabase/functions/create-user-webhook/index.ts`**
-- Accepts POST with JSON body: `{ email, name, packageId }` (fields Make.com will send)
-- Uses `SUPABASE_SERVICE_ROLE_KEY` for admin operations
-- Adds a shared secret header check (`x-webhook-secret`) for security — prevents unauthorized calls
+**1. Create `supabase/functions/check-user-exists/index.ts`**
+- Accepts POST with JSON body: `{ email }`
+- Validates the `x-webhook-secret` header (same `WEBHOOK_SECRET` already configured)
+- Uses `SUPABASE_SERVICE_ROLE_KEY` for admin lookup
 - Logic:
-  - Validate input (email required, packageId must be one of `basico`, `pro`, `plus`)
   - Look up user by email via `supabaseAdmin.auth.admin.listUsers()`
-  - **If user exists**: add credits to existing balance
-  - **If user doesn't exist**: create user with password `123456`, `email_confirm: true`, metadata `{ name, must_change_password: true }`; wait for trigger to create profile/credits; then update credits
-  - Log transaction in `credit_transactions`
-  - Return success response with `isNewUser`, `email`, `credits`
+  - If found: return `{ exists: true, userId, email, creditsBalance }`
+  - If not found: return `{ exists: false, email }`
+- No database changes — read-only operation
 
-**2. Add webhook secret**
-- Use `add_secret` tool to request a `WEBHOOK_SECRET` from the user — this secures the endpoint so only Make.com can call it
+**2. No new secrets needed**
+- Reuses the existing `WEBHOOK_SECRET` for security
 
 **3. No frontend changes needed**
-- The existing `ProtectedRoute` already checks `must_change_password` and redirects to `/change-password`
-- The `/change-password` page already clears the flag after password update
-- Password `123456` is the fixed default as requested
 
-### Expected Make.com webhook payload
+### Expected request
 ```json
-{
-  "email": "buyer@example.com",
-  "name": "João Silva",
-  "packageId": "pro"
-}
+POST /check-user-exists
+Header: x-webhook-secret: <secret>
+Body: { "email": "buyer@example.com" }
 ```
 
-### Security
-- Webhook secret header validation to prevent unauthorized access
-- Uses service role key server-side only
-- JWT verification disabled (webhook from external service, no user auth token)
+### Expected responses
+```json
+// User exists
+{ "exists": true, "userId": "uuid", "email": "...", "creditsBalance": 24 }
+
+// User not found
+{ "exists": false, "email": "..." }
+```
+
+### Make.com flow
+1. Hotmart purchase triggers Make.com
+2. Make.com calls `check-user-exists` with buyer email
+3. Based on `exists` response, Make.com routes to `create-user-webhook` (handles both new and existing users with credit addition)
 
