@@ -5,10 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
 import Stepper from "@/components/Stepper";
 import ImageUpload from "@/components/ImageUpload";
 import CreditsBadge from "@/components/CreditsBadge";
-import { ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RefreshCw, ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,34 @@ const OBJECTIVES = [
   { value: "engajar", label: "Engajar (salvar, compartilhar)" },
 ];
 
+interface CarouselSlide {
+  slide_number: number;
+  slide_role: string;
+  strategy: string;
+  headline: string;
+  subtext: string;
+  cta: string;
+}
+
+interface CarouselCopy {
+  carousel_title: string;
+  slides_count: number;
+  credits_cost: number;
+  objective: string;
+  slides: CarouselSlide[];
+}
+
+const ROLE_COLORS: Record<string, string> = {
+  gancho: "bg-red-500/10 text-red-400 border-red-500/20",
+  dor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  agravamento: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  insight: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  solução: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  benefícios: "bg-green-500/10 text-green-400 border-green-500/20",
+  "quebra de objeção": "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  cta: "bg-primary/10 text-primary border-primary/20",
+};
+
 const CreateCarousel = () => {
   const [step, setStep] = useState(0);
   const [images, setImages] = useState<File[]>([]);
@@ -38,7 +67,12 @@ const CreateCarousel = () => {
   const [carouselObjective, setCarouselObjective] = useState("vender diretamente");
   const [creativeStyle, setCreativeStyle] = useState("");
   const [extraContext, setExtraContext] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  // Phase states
+  const [loadingCopy, setLoadingCopy] = useState(false);
+  const [generatedCopy, setGeneratedCopy] = useState<CarouselCopy | null>(null);
+  const [loadingImages, setLoadingImages] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -54,15 +88,46 @@ const CreateCarousel = () => {
     }
   };
 
-  const handleGenerate = async () => {
+  // Phase 1: Generate copy only
+  const handleGenerateCopy = async () => {
     if (!user) return;
-    const cost = slidesCount;
+    setLoadingCopy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-carousel", {
+        body: {
+          phase: "copy",
+          product_name: productName,
+          main_promise: mainPromise,
+          pain_points: painPoints,
+          benefits,
+          objections: objections || null,
+          carousel_objective: carouselObjective,
+          creative_style: creativeStyle || null,
+          extra_context: extraContext || null,
+          slides_count: slidesCount,
+        },
+      });
+      if (error) throw error;
+      setGeneratedCopy(data.copy);
+      toast({ title: "Copy gerada!", description: "Revise os slides e confirme para gerar as imagens." });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Erro ao gerar copy", description: err.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setLoadingCopy(false);
+    }
+  };
+
+  // Phase 2: Generate images from approved copy
+  const handleGenerateImages = async () => {
+    if (!user || !generatedCopy) return;
+    const cost = generatedCopy.slides.length;
     if ((credits?.credits_balance ?? 0) < cost) {
-      toast({ title: "Créditos insuficientes", description: `Você precisa de ${cost} créditos para gerar ${slidesCount} slides.`, variant: "destructive" });
+      toast({ title: "Créditos insuficientes", description: `Você precisa de ${cost} créditos para gerar ${cost} slides.`, variant: "destructive" });
       return;
     }
 
-    setLoading(true);
+    setLoadingImages(true);
     try {
       // 1. Upload reference images
       const imageUrls: string[] = [];
@@ -90,38 +155,35 @@ const CreateCarousel = () => {
           carousel_objective: carouselObjective,
           creative_style: creativeStyle || null,
           extra_context: extraContext || null,
-          slides_count: slidesCount,
+          slides_count: generatedCopy.slides.length,
           status: "processing",
+          result_data: generatedCopy as any,
         })
         .select()
         .single();
       if (reqError) throw reqError;
 
-      // 3. Call generate-carousel edge function
-      const { data: carouselData, error: carouselError } = await supabase.functions.invoke("generate-carousel", {
+      // 3. Call generate-carousel phase 2
+      const { data: imagesData, error: imagesError } = await supabase.functions.invoke("generate-carousel", {
         body: {
+          phase: "images",
           image_urls: imageUrls,
+          copy: generatedCopy,
           product_name: productName,
-          main_promise: mainPromise,
-          pain_points: painPoints,
-          benefits,
-          objections: objections || null,
-          carousel_objective: carouselObjective,
           creative_style: creativeStyle || null,
-          extra_context: extraContext || null,
-          slides_count: slidesCount,
+          slides_count: generatedCopy.slides.length,
         },
       });
-      if (carouselError) throw carouselError;
+      if (imagesError) throw imagesError;
 
-      // 4. Save result_data to carousel_requests
+      // 4. Update request status
       await supabase
         .from("carousel_requests")
-        .update({ status: "completed", result_data: carouselData.copy })
+        .update({ status: "completed" })
         .eq("id", request.id);
 
       // 5. Save generated images to generated_creatives
-      for (const slide of carouselData.slides) {
+      for (const slide of imagesData.slides) {
         await supabase.from("generated_creatives").insert({
           user_id: user.id,
           image_url: slide.image_url,
@@ -129,7 +191,7 @@ const CreateCarousel = () => {
           copy_data: {
             type: "carousel",
             slide_number: slide.slide_number,
-            ...carouselData.copy.slides.find((s: any) => s.slide_number === slide.slide_number),
+            ...generatedCopy.slides.find((s) => s.slide_number === slide.slide_number),
           },
           credits_used: 1,
         });
@@ -148,21 +210,111 @@ const CreateCarousel = () => {
         user_id: user.id,
         type: "usage",
         amount: -cost,
-        description: `Carrossel gerado: ${productName} (${slidesCount} slides)`,
+        description: `Carrossel gerado: ${productName} (${cost} slides)`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["credits"] });
       queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
-      toast({ title: "Carrossel gerado!", description: `${slidesCount} slides criados com sucesso.` });
+      toast({ title: "Carrossel gerado!", description: `${cost} slides criados com sucesso.` });
       navigate(`/carousel-results/${request.id}`);
     } catch (err: any) {
       console.error(err);
-      toast({ title: "Erro ao gerar carrossel", description: err.message || "Tente novamente.", variant: "destructive" });
+      toast({ title: "Erro ao gerar imagens", description: err.message || "Tente novamente.", variant: "destructive" });
     } finally {
-      setLoading(false);
+      setLoadingImages(false);
     }
   };
+
+  // Copy review UI
+  if (generatedCopy && !loadingImages) {
+    return (
+      <div>
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-display text-foreground mb-2">Revise a Copy do Carrossel</h2>
+            <p className="text-muted-foreground">
+              {generatedCopy.slides.length} slides para "{productName}" — confirme para gerar as imagens
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {generatedCopy.slides.map((slide, idx) => {
+              const roleKey = slide.slide_role.toLowerCase();
+              const colorClass = ROLE_COLORS[roleKey] || "bg-muted text-muted-foreground border-border";
+              return (
+                <div
+                  key={idx}
+                  className="gradient-card rounded-2xl p-6 border border-border shadow-card"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-display text-sm shrink-0">
+                      {slide.slide_number}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className={colorClass}>
+                          {slide.slide_role}
+                        </Badge>
+                      </div>
+                      <h3 className="text-lg font-display text-foreground">{slide.headline}</h3>
+                      <p className="text-sm text-muted-foreground">{slide.subtext}</p>
+                      {slide.cta && (
+                        <span className="inline-block px-3 py-1 rounded-lg gradient-primary text-primary-foreground text-xs font-semibold">
+                          {slide.cta}
+                        </span>
+                      )}
+                      <p className="text-xs text-foreground/50 italic mt-2">
+                        Estratégia: {slide.strategy}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-4 justify-center pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGeneratedCopy(null);
+              }}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Regenerar Copy
+            </Button>
+            <Button variant="hero" onClick={handleGenerateImages}>
+              <ImageIcon className="w-4 h-4" />
+              Gerar Imagens ({generatedCopy.slides.length} créditos)
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading images UI
+  if (loadingImages) {
+    return (
+      <div>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+            <div className="relative mb-6">
+              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-glow animate-pulse">
+                <Sparkles className="w-10 h-10 text-primary-foreground" />
+              </div>
+            </div>
+            <h2 className="text-xl font-display text-foreground mb-2">Gerando as imagens do carrossel...</h2>
+            <p className="text-muted-foreground text-center max-w-md">
+              Estamos criando {generatedCopy?.slides.length || slidesCount} imagens para seus slides. Isso pode levar alguns minutos.
+            </p>
+            <Loader2 className="w-6 h-6 text-primary animate-spin mt-6" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -178,16 +330,16 @@ const CreateCarousel = () => {
           <Stepper steps={STEPS} currentStep={step} />
         </div>
 
-        {loading ? (
+        {loadingCopy ? (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <div className="relative mb-6">
               <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-glow animate-pulse">
                 <Sparkles className="w-10 h-10 text-primary-foreground" />
               </div>
             </div>
-            <h2 className="text-xl font-display text-foreground mb-2">Gerando seu carrossel...</h2>
+            <h2 className="text-xl font-display text-foreground mb-2">Gerando a copy do carrossel...</h2>
             <p className="text-muted-foreground text-center max-w-md">
-              Estamos criando a copy e {slidesCount} imagens para seus slides. Isso pode levar alguns minutos.
+              Estamos criando os textos para {slidesCount} slides. Isso leva apenas alguns segundos.
             </p>
             <Loader2 className="w-6 h-6 text-primary animate-spin mt-6" />
           </div>
@@ -341,11 +493,11 @@ const CreateCarousel = () => {
               ) : (
                 <Button
                   variant="hero"
-                  onClick={handleGenerate}
-                  disabled={!canProceed() || loading}
+                  onClick={handleGenerateCopy}
+                  disabled={!canProceed() || loadingCopy}
                 >
                   <Sparkles className="w-4 h-4" />
-                  Gerar Carrossel ({slidesCount} créditos)
+                  Gerar Copy ({slidesCount} slides)
                 </Button>
               )}
             </div>
