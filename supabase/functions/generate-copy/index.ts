@@ -121,8 +121,19 @@ REGRA DE LEGENDAS: Além dos ângulos, gere também 3 opções de legenda para o
                       required: ["angle_name", "headline", "body", "cta", "visual_options"],
                     },
                   },
+                  ad_captions: {
+                    type: "array",
+                    description: "3 opções de legenda para o anúncio/postagem, cada uma com gancho, desenvolvimento e CTA",
+                    items: {
+                      type: "object",
+                      properties: {
+                        caption: { type: "string", description: "Legenda completa pronta para uso" },
+                      },
+                      required: ["caption"],
+                    },
+                  },
                 },
-                required: ["angles"],
+                required: ["angles", "ad_captions"],
               },
             },
           },
