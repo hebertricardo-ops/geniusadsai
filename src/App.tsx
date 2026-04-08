@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import RegenerateCreative from "./pages/RegenerateCreative";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import ChangePassword from "./pages/ChangePassword";
+import AddCredits from "./pages/AddCredits";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
