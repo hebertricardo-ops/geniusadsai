@@ -261,7 +261,7 @@ const Index = () => {
               cta: "COMEÇAR GRÁTIS",
             },
             {
-              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false, packageId: "basico",
+              name: "Básico", emoji: "💡", credits: 20, price: "R$ 49,90", perUnit: "R$ 2,49 por criativo", highlight: false, packageId: "basico", checkoutUrl: "https://pay.hotmart.com/E105290250P?off=1lncai6a&checkoutMode=10",
               tagline: "Para quem quer sair do zero e começar a testar de verdade",
               features: ["Criação em escala inicial", "Mais testes = mais chances de vender", "Baixo custo por criativo", "Acesso imediato"],
               cta: "COMEÇAR COM O BÁSICO",
