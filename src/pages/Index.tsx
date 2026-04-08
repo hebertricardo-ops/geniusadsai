@@ -59,6 +59,16 @@ const Index = () => {
           </Button>
         </div>
 
+        {/* Hero Showcase Image */}
+        <div className="my-12 animate-fade-in">
+          <img
+            src={heroShowcase}
+            alt="Genius ADS - Plataforma de geração de criativos com IA"
+            className="w-full max-w-4xl mx-auto rounded-2xl shadow-2xl"
+            loading="lazy"
+          />
+        </div>
+
         {/* Benefícios grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto animate-fade-in">
           {[
