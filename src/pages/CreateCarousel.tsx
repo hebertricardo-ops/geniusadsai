@@ -394,18 +394,10 @@ const CreateCarousel = () => {
                               />
                             </div>
                           ) : (
-                            <div>
-                              <Label className="text-sm text-muted-foreground mb-2 block">
-                                Descreva a imagem que deseja gerar para este slide
-                              </Label>
-                              <Textarea
-                                value={state?.aiPrompt || ""}
-                                onChange={(e) => setSlideStates(prev => prev.map((s, i) => i === idx ? { ...s, aiPrompt: e.target.value } : s))}
-                                placeholder="Ex: produto em cenário futurista com luzes neon, fundo escuro com gradiente..."
-                                className="bg-background/50"
-                                rows={2}
-                              />
-                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              <Sparkles className="w-3 h-3 inline mr-1" />
+                              A IA gerará automaticamente uma imagem baseada no contexto deste slide
+                            </p>
                           )}
                         </div>
                       )}
