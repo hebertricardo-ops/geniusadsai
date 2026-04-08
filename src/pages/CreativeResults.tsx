@@ -3,13 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2, RefreshCw } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2, RefreshCw, Copy, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const CreativeResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+  const { toast } = useToast();
 
   const { data: creatives = [], isLoading } = useQuery({
     queryKey: ["creative-results", requestId],
@@ -208,6 +209,36 @@ const CreativeResults = () => {
                 ))}
               </div>
             </div>
+
+            {/* Ad Captions */}
+            {copyData?.ad_captions && (copyData.ad_captions as any[]).length > 0 && (
+              <div className="gradient-card rounded-2xl p-6 border border-border shadow-card">
+                <div className="flex items-center gap-2 mb-4">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  <h3 className="font-display text-foreground text-lg">Legendas para o Anúncio</h3>
+                </div>
+                <div className="space-y-4">
+                  {(copyData.ad_captions as any[]).map((item: any, idx: number) => (
+                    <div key={idx} className="p-4 rounded-xl bg-background/50 border border-border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-primary uppercase tracking-wider">Opção {idx + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.caption);
+                            toast({ title: "Legenda copiada!", description: `Opção ${idx + 1} copiada para a área de transferência.` });
+                          }}
+                        >
+                          <Copy className="w-3 h-3 mr-1" /> Copiar
+                        </Button>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-line">{item.caption}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">

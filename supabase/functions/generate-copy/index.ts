@@ -63,7 +63,9 @@ Benefícios: ${benefits}
 Objeções: ${objections || "Nenhuma informada"}
 CTA base informado pelo usuário: ${cta || "Compre agora"}
 
-REGRA DE CTA: Use o CTA informado pelo usuário como ponto de partida e reescreva-o incluindo uma frase que desperte gatilho de urgência ou curiosidade. Ex: se o CTA base for "Saiba Mais", o CTA final pode ser "Saiba Mais Antes que Acabe" ou "Descubra o Segredo — Saiba Mais".`;
+REGRA DE CTA: Use o CTA informado pelo usuário como ponto de partida e reescreva-o incluindo uma frase que desperte gatilho de urgência ou curiosidade. Ex: se o CTA base for "Saiba Mais", o CTA final pode ser "Saiba Mais Antes que Acabe" ou "Descubra o Segredo — Saiba Mais".
+
+REGRA DE LEGENDAS: Além dos ângulos, gere também 3 opções de legenda para o anúncio/postagem. Cada legenda deve seguir a estrutura: 1) Gancho forte (primeira linha que prende atenção), 2) Desenvolvimento persuasivo (2-3 frases curtas), 3) CTA final. As legendas devem ser variadas em tom e abordagem, baseadas nas informações do produto. Máximo de 280 caracteres por legenda.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -119,8 +121,19 @@ REGRA DE CTA: Use o CTA informado pelo usuário como ponto de partida e reescrev
                       required: ["angle_name", "headline", "body", "cta", "visual_options"],
                     },
                   },
+                  ad_captions: {
+                    type: "array",
+                    description: "3 opções de legenda para o anúncio/postagem, cada uma com gancho, desenvolvimento e CTA",
+                    items: {
+                      type: "object",
+                      properties: {
+                        caption: { type: "string", description: "Legenda completa pronta para uso" },
+                      },
+                      required: ["caption"],
+                    },
+                  },
                 },
-                required: ["angles"],
+                required: ["angles", "ad_captions"],
               },
             },
           },

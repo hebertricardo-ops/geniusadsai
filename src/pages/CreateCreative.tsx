@@ -47,6 +47,7 @@ const CreateCreative = () => {
   const [cta, setCta] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedAngles, setGeneratedAngles] = useState<CopyAngle[] | null>(null);
+  const [adCaptions, setAdCaptions] = useState<{ caption: string }[]>([]);
   const [selectedAngle, setSelectedAngle] = useState<number | null>(null);
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
@@ -113,6 +114,7 @@ const CreateCreative = () => {
       if (copyError) throw copyError;
 
       setGeneratedAngles(copyData.angles);
+      setAdCaptions(copyData.ad_captions || []);
       setSelectedAngle(null);
       setSelectedVisual(null);
 
@@ -214,6 +216,7 @@ const CreateCreative = () => {
             cta: angle.cta,
             visual_option: visual.option_label,
             format,
+            ad_captions: adCaptions,
           },
           credits_used: 1,
         });
