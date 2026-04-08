@@ -299,7 +299,7 @@ const History = () => {
                         })
                       }
                     >
-                      <Copy className="w-4 h-4 mr-1" /> Novo com mesmos dados
+                      <Copy className="w-4 h-4 mr-1" /> Gerar Novamente
                     </Button>
                   </div>
                 </div>
