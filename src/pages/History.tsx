@@ -1,15 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Image, Download, Eye, Clock, Loader2, RefreshCw, Layers, Copy } from "lucide-react";
+import { Image, Download, Eye, Clock, Loader2, RefreshCw, Layers, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const History = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "creative" | "carousel"; id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Creative requests
   const { data: requests = [], isLoading: loadingCreatives } = useQuery({
@@ -94,9 +110,36 @@ const History = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      if (deleteTarget.type === "creative") {
+        // Delete associated generated_creatives first, then the request
+        await supabase.from("generated_creatives").delete().eq("request_id", deleteTarget.id);
+        const { error } = await supabase.from("creative_requests").delete().eq("id", deleteTarget.id);
+        if (error) throw error;
+      } else {
+        // Delete associated generated_creatives first, then the carousel request
+        await supabase.from("generated_creatives").delete().eq("carousel_request_id", deleteTarget.id);
+        const { error } = await supabase.from("carousel_requests").delete().eq("id", deleteTarget.id);
+        if (error) throw error;
+      }
+      toast({ title: "Excluído com sucesso" });
+      queryClient.invalidateQueries({ queryKey: ["all-creative-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["all-carousel-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["all-creatives-by-request"] });
+      queryClient.invalidateQueries({ queryKey: ["all-creatives-by-carousel"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
   const isLoading = loadingCreatives || loadingCarousels;
 
-  // Merge and sort all items by date
   type HistoryItem =
     | { type: "creative"; data: (typeof requests)[0]; createdAt: string }
     | { type: "carousel"; data: (typeof carouselRequests)[0]; createdAt: string };
@@ -196,6 +239,14 @@ const History = () => {
                         }
                       >
                         <RefreshCw className="w-4 h-4 mr-1" /> Gerar novos
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteTarget({ type: "creative", id: req.id, name: req.product_name })}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -301,6 +352,14 @@ const History = () => {
                     >
                       <Copy className="w-4 h-4 mr-1" /> Gerar Novamente
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteTarget({ type: "carousel", id: req.id, name: req.product_name })}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
@@ -351,6 +410,28 @@ const History = () => {
           })}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir do histórico?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{deleteTarget?.name}"? Esta ação não pode ser desfeita e todas as imagens associadas serão removidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
