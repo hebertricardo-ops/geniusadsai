@@ -10,7 +10,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CreateCreative from "./pages/CreateCreative";
+import CreateCarousel from "./pages/CreateCarousel";
 import CreativeResults from "./pages/CreativeResults";
+import CarouselResults from "./pages/CarouselResults";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
 import RegenerateCreative from "./pages/RegenerateCreative";
@@ -38,7 +40,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedWithLayout><Dashboard /></ProtectedWithLayout>} />
             <Route path="/create" element={<ProtectedWithLayout><CreateCreative /></ProtectedWithLayout>} />
+            <Route path="/create-carousel" element={<ProtectedWithLayout><CreateCarousel /></ProtectedWithLayout>} />
             <Route path="/results/:requestId" element={<ProtectedWithLayout><CreativeResults /></ProtectedWithLayout>} />
+            <Route path="/carousel-results/:requestId" element={<ProtectedWithLayout><CarouselResults /></ProtectedWithLayout>} />
             <Route path="/history" element={<ProtectedWithLayout><History /></ProtectedWithLayout>} />
             <Route path="/regenerate" element={<ProtectedWithLayout><RegenerateCreative /></ProtectedWithLayout>} />
             <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
