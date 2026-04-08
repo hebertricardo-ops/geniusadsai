@@ -1,0 +1,1 @@
+ALTER TABLE public.generated_creatives ADD COLUMN carousel_request_id uuid REFERENCES public.carousel_requests(id) ON DELETE SET NULL;

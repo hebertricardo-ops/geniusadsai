@@ -218,7 +218,7 @@ const CreateCarousel = () => {
       await supabase.from("generated_creatives").insert({
         user_id: user.id,
         image_url: imageUrl,
-        request_id: requestId,
+        carousel_request_id: requestId,
         copy_data: {
           type: "carousel",
           slide_number: slide.slide_number,
