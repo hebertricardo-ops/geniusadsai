@@ -210,6 +210,36 @@ const CreativeResults = () => {
               </div>
             </div>
 
+            {/* Ad Captions */}
+            {copyData?.ad_captions && (copyData.ad_captions as any[]).length > 0 && (
+              <div className="gradient-card rounded-2xl p-6 border border-border shadow-card">
+                <div className="flex items-center gap-2 mb-4">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  <h3 className="font-display text-foreground text-lg">Legendas para o Anúncio</h3>
+                </div>
+                <div className="space-y-4">
+                  {(copyData.ad_captions as any[]).map((item: any, idx: number) => (
+                    <div key={idx} className="p-4 rounded-xl bg-background/50 border border-border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-primary uppercase tracking-wider">Opção {idx + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.caption);
+                            toast({ title: "Legenda copiada!", description: `Opção ${idx + 1} copiada para a área de transferência.` });
+                          }}
+                        >
+                          <Copy className="w-3 h-3 mr-1" /> Copiar
+                        </Button>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-line">{item.caption}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
               <Button variant="outline" onClick={() => navigate("/dashboard")}>
