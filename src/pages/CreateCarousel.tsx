@@ -738,6 +738,16 @@ const CreateCarousel = () => {
         )}
       </div>
     </div>
+  return (
+    <>
+      {content}
+      <InsufficientCreditsDialog
+        open={isCreditsDialogOpen}
+        onClose={() => setIsCreditsDialogOpen(false)}
+        creditsNeeded={slidesCount}
+        creditsAvailable={credits?.credits_balance ?? 0}
+      />
+    </>
   );
 };
 
