@@ -36,10 +36,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
     if (error) throw error;
 
-    const user = users?.find((u) => u.email === email);
+    const user = data?.users?.find((u) => u.email === email && !u.deleted_at);
 
     if (user) {
       const { data: credits } = await supabaseAdmin
