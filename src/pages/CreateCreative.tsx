@@ -597,7 +597,6 @@ const CreateCreative = () => {
           </>
         )}
       </div>
-    </div>
       <InsufficientCreditsDialog
         open={isCreditsDialogOpen}
         onClose={() => setIsCreditsDialogOpen(false)}
