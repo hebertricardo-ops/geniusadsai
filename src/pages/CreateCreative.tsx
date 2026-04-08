@@ -598,6 +598,13 @@ const CreateCreative = () => {
         )}
       </div>
     </div>
+      <InsufficientCreditsDialog
+        open={isCreditsDialogOpen}
+        onClose={() => setIsCreditsDialogOpen(false)}
+        creditsNeeded={quantity}
+        creditsAvailable={credits?.credits_balance ?? 0}
+      />
+    </div>
   );
 };
 
