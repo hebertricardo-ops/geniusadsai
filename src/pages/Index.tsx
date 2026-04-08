@@ -63,13 +63,29 @@ const Index = () => {
         {/* Video */}
         <div className="max-w-3xl mx-auto mb-14 animate-fade-in">
           <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl border border-border/50" style={{ paddingBottom: '56.25%' }}>
-            <iframe
-              className="absolute inset-0 w-full h-full"
-              src="https://www.youtube.com/embed/XsivhOx4Q0Q?controls=0&modestbranding=1&rel=0&showinfo=0"
-              title="Genius ADS - Demo"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {!isVideoPlaying ? (
+              <div
+                className="absolute inset-0 cursor-pointer group"
+                onClick={() => setIsVideoPlaying(true)}
+              >
+                <img
+                  src="https://img.youtube.com/vi/XsivhOx4Q0Q/maxresdefault.jpg"
+                  alt="Genius ADS - Demo"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                  <PlayCircle className="w-20 h-20 text-white drop-shadow-lg group-hover:scale-110 transition-transform" />
+                </div>
+              </div>
+            ) : (
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/XsivhOx4Q0Q?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0"
+                title="Genius ADS - Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )}
           </div>
         </div>
 
