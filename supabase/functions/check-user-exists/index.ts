@@ -36,10 +36,30 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
-    if (error) throw error;
+    // Paginate through all users to find by email
+    let user = null;
+    let page = 1;
+    const perPage = 100;
 
-    const user = users?.find((u) => u.email === email);
+    while (true) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      if (error) throw error;
+
+      const found = data?.users?.find((u) => u.email === email);
+      if (found) {
+        user = found;
+        break;
+      }
+
+      // No more pages
+      if (!data?.users || data.users.length < perPage) break;
+      page++;
+    }
+
+    console.log(`check-user-exists: email=${email}, found=${!!user}, userId=${user?.id ?? 'none'}`);
 
     if (user) {
       const { data: credits } = await supabaseAdmin
