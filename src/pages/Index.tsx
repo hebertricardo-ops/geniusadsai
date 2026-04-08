@@ -176,7 +176,7 @@ const Index = () => {
 
       {/* DOBRA 5 — O que você recebe */}
       {/* Hero Showcase Image */}
-      <div className="max-w-5xl mx-auto px-4 pt-16 pb-8 animate-fade-in">
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-4 animate-fade-in">
         <img
           src={heroShowcase}
           alt="Genius ADS - Plataforma de geração de criativos com IA"
