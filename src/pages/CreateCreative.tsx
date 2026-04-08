@@ -76,7 +76,7 @@ const CreateCreative = () => {
   const handleGenerate = async () => {
     if (!user) return;
     if ((credits?.credits_balance ?? 0) < quantity) {
-      toast({ title: "Créditos insuficientes", description: "Você não tem créditos suficientes.", variant: "destructive" });
+      setIsCreditsDialogOpen(true);
       return;
     }
 
