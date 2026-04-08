@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import InsufficientCreditsDialog from "@/components/InsufficientCreditsDialog";
 
 const STEPS = ["Imagens", "Produto", "Persuasão", "CTA"];
 
@@ -55,6 +56,7 @@ const CreateCreative = () => {
   const [creativeStyle, setCreativeStyle] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
   const [generatingCreative, setGeneratingCreative] = useState(false);
+  const [isCreditsDialogOpen, setIsCreditsDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -74,7 +76,7 @@ const CreateCreative = () => {
   const handleGenerate = async () => {
     if (!user) return;
     if ((credits?.credits_balance ?? 0) < quantity) {
-      toast({ title: "Créditos insuficientes", description: "Você não tem créditos suficientes.", variant: "destructive" });
+      setIsCreditsDialogOpen(true);
       return;
     }
 
@@ -595,6 +597,12 @@ const CreateCreative = () => {
           </>
         )}
       </div>
+      <InsufficientCreditsDialog
+        open={isCreditsDialogOpen}
+        onClose={() => setIsCreditsDialogOpen(false)}
+        creditsNeeded={quantity}
+        creditsAvailable={credits?.credits_balance ?? 0}
+      />
     </div>
   );
 };
