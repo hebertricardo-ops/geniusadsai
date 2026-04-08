@@ -12,6 +12,7 @@ import {
 import logoIcon from "@/assets/logo-icon.png";
 import logoText from "@/assets/logo-text.png";
 import heroShowcase from "@/assets/hero-showcase.jpeg";
+import mockupImage from "@/assets/mockup_lp_1.png";
 import {
   Accordion,
   AccordionContent,
