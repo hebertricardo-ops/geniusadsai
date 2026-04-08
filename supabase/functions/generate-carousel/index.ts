@@ -314,8 +314,10 @@ Principais benefícios: ${benefits}
 Principais objeções: ${objections || "Nenhuma informada"}
 Objetivo do carrossel: ${carousel_objective}
 Tom/estilo desejado: ${creative_style || "Não especificado"}
-CTA desejado para o slide final: ${cta || "A IA deve criar um CTA adequado"}
+CTA base informado pelo usuário: ${cta || "A IA deve criar um CTA adequado"}
 Informações adicionais: ${extra_context || "Nenhuma"}
+
+REGRA DE CTA: Use o CTA informado pelo usuário como ponto de partida e reescreva-o para o slide final incluindo uma frase complementar que desperte gatilho de urgência ou gatilho de desejo. Ex: se o CTA base for "Saiba Mais", o CTA final pode ser "Saiba Mais Antes que Acabe" ou "Descubra o Segredo — Saiba Mais". Se o CTA base for "Compre Agora", pode virar "Compre Agora e Garanta o Seu" ou "Compre Agora — Oferta por Tempo Limitado". Mantenha o CTA curto, direto e com no máximo 8 palavras.
 
 Agora gere a copy completa do carrossel.`;
 
