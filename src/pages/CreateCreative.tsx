@@ -216,6 +216,7 @@ const CreateCreative = () => {
             cta: angle.cta,
             visual_option: visual.option_label,
             format,
+            ad_captions: adCaptions,
           },
           credits_used: 1,
         });
