@@ -319,6 +319,8 @@ Informações adicionais: ${extra_context || "Nenhuma"}
 
 REGRA DE CTA: Use o CTA informado pelo usuário como ponto de partida e reescreva-o para o slide final incluindo uma frase complementar que desperte gatilho de urgência ou gatilho de desejo. Ex: se o CTA base for "Saiba Mais", o CTA final pode ser "Saiba Mais Antes que Acabe" ou "Descubra o Segredo — Saiba Mais". Se o CTA base for "Compre Agora", pode virar "Compre Agora e Garanta o Seu" ou "Compre Agora — Oferta por Tempo Limitado". Mantenha o CTA curto, direto e com no máximo 8 palavras.
 
+REGRA DE LEGENDAS: Além da copy dos slides, gere também 3 opções de legenda para a postagem do carrossel. Cada legenda deve seguir a estrutura: 1) Gancho forte (primeira linha que prende atenção), 2) Desenvolvimento persuasivo (2-3 frases curtas), 3) CTA final. As legendas devem ser variadas em tom e abordagem, baseadas nas informações do produto. Máximo de 280 caracteres por legenda.
+
 Agora gere a copy completa do carrossel.`;
 
   const slideSchema = {
