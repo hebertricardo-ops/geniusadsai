@@ -110,10 +110,35 @@ const History = () => {
     }
   };
 
-  const isLoading = loadingCreatives || loadingCarousels;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      if (deleteTarget.type === "creative") {
+        // Delete associated generated_creatives first, then the request
+        await supabase.from("generated_creatives").delete().eq("request_id", deleteTarget.id);
+        const { error } = await supabase.from("creative_requests").delete().eq("id", deleteTarget.id);
+        if (error) throw error;
+      } else {
+        // Delete associated generated_creatives first, then the carousel request
+        await supabase.from("generated_creatives").delete().eq("carousel_request_id", deleteTarget.id);
+        const { error } = await supabase.from("carousel_requests").delete().eq("id", deleteTarget.id);
+        if (error) throw error;
+      }
+      toast({ title: "Excluído com sucesso" });
+      queryClient.invalidateQueries({ queryKey: ["all-creative-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["all-carousel-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["all-creatives-by-request"] });
+      queryClient.invalidateQueries({ queryKey: ["all-creatives-by-carousel"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
 
-  // Merge and sort all items by date
-  type HistoryItem =
+  const isLoading = loadingCreatives || loadingCarousels;
     | { type: "creative"; data: (typeof requests)[0]; createdAt: string }
     | { type: "carousel"; data: (typeof carouselRequests)[0]; createdAt: string };
 
