@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      carousel_requests: {
+        Row: {
+          benefits: string
+          carousel_objective: string
+          created_at: string
+          creative_style: string | null
+          extra_context: string | null
+          id: string
+          main_promise: string
+          objections: string | null
+          pain_points: string
+          product_name: string
+          result_data: Json | null
+          slides_count: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          benefits: string
+          carousel_objective: string
+          created_at?: string
+          creative_style?: string | null
+          extra_context?: string | null
+          id?: string
+          main_promise: string
+          objections?: string | null
+          pain_points: string
+          product_name: string
+          result_data?: Json | null
+          slides_count?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          benefits?: string
+          carousel_objective?: string
+          created_at?: string
+          creative_style?: string | null
+          extra_context?: string | null
+          id?: string
+          main_promise?: string
+          objections?: string | null
+          pain_points?: string
+          product_name?: string
+          result_data?: Json | null
+          slides_count?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       creative_requests: {
         Row: {
           benefits: string
