@@ -185,7 +185,7 @@ async function handleCopyPhase(body: any) {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-  const { product_name, main_promise, pain_points, benefits, objections, carousel_objective, creative_style, extra_context, slides_count } = body;
+  const { product_name, main_promise, pain_points, benefits, objections, carousel_objective, creative_style, extra_context, slides_count, cta } = body;
 
   if (!product_name || !main_promise || !pain_points || !benefits || !carousel_objective)
     throw new Error("Missing required fields");
@@ -202,6 +202,7 @@ Principais benefícios: ${benefits}
 Principais objeções: ${objections || "Nenhuma informada"}
 Objetivo do carrossel: ${carousel_objective}
 Tom/estilo desejado: ${creative_style || "Não especificado"}
+CTA desejado para o slide final: ${cta || "A IA deve criar um CTA adequado"}
 Informações adicionais: ${extra_context || "Nenhuma"}
 
 Agora gere a copy completa do carrossel.`;

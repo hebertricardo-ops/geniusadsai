@@ -76,6 +76,7 @@ const CreateCarousel = () => {
   const [carouselObjective, setCarouselObjective] = useState(prefill?.carousel_objective ?? "vender diretamente");
   const [creativeStyle, setCreativeStyle] = useState(prefill?.creative_style ?? "");
   const [extraContext, setExtraContext] = useState(prefill?.extra_context ?? "");
+  const [carouselCta, setCarouselCta] = useState(prefill?.cta ?? "");
 
   // Phase states
   const [loadingCopy, setLoadingCopy] = useState(false);
@@ -115,6 +116,7 @@ const CreateCarousel = () => {
           carousel_objective: carouselObjective,
           creative_style: creativeStyle || null,
           extra_context: extraContext || null,
+          cta: carouselCta || null,
           slides_count: slidesCount,
         },
       });
@@ -561,15 +563,51 @@ const CreateCarousel = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Estilo do Carrossel */}
+                <div className="space-y-3">
+                  <h2 className="text-xl font-display text-foreground">Estilo do Carrossel</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "dark", label: "Dark / Escuro" },
+                      { value: "light", label: "Claro / Light" },
+                      { value: "clean", label: "Clean / Minimalista" },
+                      { value: "premium", label: "Premium / Luxuoso" },
+                      { value: "playful", label: "Infantil / Lúdico" },
+                      { value: "tech", label: "Tecnológico / Futurista" },
+                      { value: "vibrant", label: "Vibrante / Chamativo" },
+                      { value: "corporate", label: "Corporativo / Profissional" },
+                    ].map((style) => (
+                      <button
+                        key={style.value}
+                        type="button"
+                        onClick={() => setCreativeStyle(creativeStyle === style.value ? "" : style.value)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                          creativeStyle === style.value
+                            ? "border-primary bg-primary/10 text-primary shadow-md scale-105"
+                            : "border-border bg-background/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                        }`}
+                      >
+                        {style.label}
+                      </button>
+                    ))}
+                  </div>
+                  {!creativeStyle && (
+                    <p className="text-xs text-muted-foreground">Nenhum estilo selecionado — a IA escolherá automaticamente.</p>
+                  )}
+                </div>
+
+                {/* CTA */}
                 <div>
-                  <Label className="text-foreground font-display mb-2 block">Estilo / Tom (opcional)</Label>
+                  <Label className="text-foreground font-display mb-2 block">CTA do slide final (opcional)</Label>
                   <Input
-                    value={creativeStyle}
-                    onChange={(e) => setCreativeStyle(e.target.value)}
-                    placeholder="Ex: dark tecnológico, clean, premium, vibrante, emocional"
+                    value={carouselCta}
+                    onChange={(e) => setCarouselCta(e.target.value)}
+                    placeholder="Ex: Compre agora, Saiba mais, Garanta o seu..."
                     className="bg-background/50"
                   />
                 </div>
+
                 <div>
                   <Label className="text-foreground font-display mb-2 block">Contexto adicional (opcional)</Label>
                   <Textarea
