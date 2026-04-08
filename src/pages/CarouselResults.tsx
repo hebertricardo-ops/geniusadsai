@@ -36,7 +36,7 @@ const CarouselResults = () => {
       const { data, error } = await supabase
         .from("generated_creatives")
         .select("*")
-        .eq("request_id", requestId!)
+        .eq("carousel_request_id", requestId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
