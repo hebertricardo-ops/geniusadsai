@@ -278,6 +278,29 @@ const History = () => {
                     <Button variant="outline" size="sm" onClick={() => navigate(`/carousel-results/${req.id}`)}>
                       <Eye className="w-4 h-4 mr-1" /> Ver detalhes
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        navigate("/create-carousel", {
+                          state: {
+                            prefill: {
+                              product_name: req.product_name,
+                              main_promise: req.main_promise,
+                              pain_points: req.pain_points,
+                              benefits: req.benefits,
+                              objections: req.objections || "",
+                              carousel_objective: req.carousel_objective,
+                              creative_style: req.creative_style || "",
+                              extra_context: req.extra_context || "",
+                              slides_count: req.slides_count,
+                            },
+                          },
+                        })
+                      }
+                    >
+                      <Copy className="w-4 h-4 mr-1" /> Novo com mesmos dados
+                    </Button>
                   </div>
                 </div>
 
