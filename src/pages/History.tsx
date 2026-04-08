@@ -22,6 +22,10 @@ import {
 const History = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "creative" | "carousel"; id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Creative requests
   const { data: requests = [], isLoading: loadingCreatives } = useQuery({
