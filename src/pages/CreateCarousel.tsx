@@ -176,14 +176,26 @@ const CreateCarousel = () => {
       });
       if (imagesError) throw imagesError;
 
-      // 4. Update request status
-      await supabase
-        .from("carousel_requests")
-        .update({ status: "completed" })
-        .eq("id", request.id);
+      // Check for fallback (complete failure)
+      if (imagesData?.fallback) {
+        await supabase.from("carousel_requests").update({ status: "failed" }).eq("id", request.id);
+        toast({ title: "Erro na geração de imagens", description: imagesData.error || "Tente novamente em alguns minutos.", variant: "destructive" });
+        return;
+      }
 
-      // 5. Save generated images to generated_creatives
-      for (const slide of imagesData.slides) {
+      const generatedSlides = imagesData?.slides || [];
+      if (generatedSlides.length === 0) {
+        await supabase.from("carousel_requests").update({ status: "failed" }).eq("id", request.id);
+        toast({ title: "Nenhuma imagem gerada", description: "Tente novamente em alguns minutos.", variant: "destructive" });
+        return;
+      }
+
+      // 4. Update request status
+      const finalStatus = imagesData?.partial ? "partial" : "completed";
+      await supabase.from("carousel_requests").update({ status: finalStatus }).eq("id", request.id);
+
+      // 5. Save generated images
+      for (const slide of generatedSlides) {
         await supabase.from("generated_creatives").insert({
           user_id: user.id,
           image_url: slide.image_url,
@@ -197,26 +209,31 @@ const CreateCarousel = () => {
         });
       }
 
-      // 6. Deduct credits
+      // 6. Deduct credits (only for successful slides)
+      const actualCost = generatedSlides.length;
       await supabase
         .from("user_credits")
         .update({
-          credits_balance: (credits?.credits_balance ?? 0) - cost,
-          credits_used: (credits?.credits_used ?? 0) + cost,
+          credits_balance: (credits?.credits_balance ?? 0) - actualCost,
+          credits_used: (credits?.credits_used ?? 0) + actualCost,
         })
         .eq("user_id", user.id);
 
       await supabase.from("credit_transactions").insert({
         user_id: user.id,
         type: "usage",
-        amount: -cost,
-        description: `Carrossel gerado: ${productName} (${cost} slides)`,
+        amount: -actualCost,
+        description: `Carrossel gerado: ${productName} (${actualCost} slides)`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["credits"] });
       queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
-      toast({ title: "Carrossel gerado!", description: `${cost} slides criados com sucesso.` });
+      if (imagesData?.partial) {
+        toast({ title: "Carrossel parcialmente gerado", description: `${generatedSlides.length} de ${cost} slides criados. Alguns falharam por limite de quota.` });
+      } else {
+        toast({ title: "Carrossel gerado!", description: `${actualCost} slides criados com sucesso.` });
+      }
       navigate(`/carousel-results/${request.id}`);
     } catch (err: any) {
       console.error(err);
