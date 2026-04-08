@@ -352,6 +352,14 @@ const History = () => {
                     >
                       <Copy className="w-4 h-4 mr-1" /> Gerar Novamente
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteTarget({ type: "carousel", id: req.id, name: req.product_name })}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
