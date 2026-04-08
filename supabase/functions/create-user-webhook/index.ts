@@ -40,7 +40,7 @@ serve(async (req) => {
 
     const credits = CREDITS_MAP[packageId];
     if (!credits) {
-      return new Response(JSON.stringify({ error: "packageId inválido. Use: basico, pro, plus" }), {
+      return new Response(JSON.stringify({ error: "packageId inválido. Use: PACOTE BASICO, PACOTE PRO, PACOTE PLUS" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
