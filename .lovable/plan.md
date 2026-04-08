@@ -1,32 +1,83 @@
-## Plano: Reescrever a landing page do Genius ADS com a nova copy (9 dobras)
+
+
+## Plano Atualizado: Carrossel com Geração de Copy + Imagens dos Slides
 
 ### Resumo
 
-Reescrever completamente o conteúdo do `src/pages/Index.tsx` mantendo o mesmo layout system (gradient-hero, gradient-card, shadow-card, font-display, cores laranja/azul marinho, botões hero/outline, animações) mas expandindo de 5 seções para 9 dobras com toda a copy fornecida.  
+A funcionalidade "Novo Carrossel" agora terá **duas etapas de geração**:
+1. **Gerar copy** via OpenAI (igual ao plano anterior) — retorna headline, subtext, strategy para cada slide
+2. **Gerar imagens** de cada slide via Google Vertex AI (Gemini) — usando as imagens de referência do usuário + a copy gerada como prompt, no mesmo padrão da `generate-creative`
+
+O resultado final é um carrossel completo: copy estruturada + imagens prontas para cada slide.
+
+### Arquitetura
+
+```text
+┌──────────────────┐     ┌─────────────────────┐     ┌────────────┐
+│  CreateCarousel   │────▶│  generate-carousel   │────▶│  OpenAI    │
+│  (formulário +    │     │  (edge function)     │     │  (copy)    │
+│   upload imagens) │     │                      │────▶│  Vertex AI │
+└───────┬──────────┘     │                      │     │  (imagens) │
+        │                 └──────────┬──────────┘     └────────────┘
+        ▼                            ▼
+┌──────────────────┐     ┌──────────────────────┐
+│ CarouselResults   │◀───│ carousel_requests     │
+│ (slides visuais)  │    │ generated_creatives   │
+└──────────────────┘     └──────────────────────┘
+```
+
+### Etapas de Implementação
+
+**1. Criar tabela `carousel_requests`**
+
+Migration com colunas: `id`, `user_id`, `product_name`, `main_promise`, `pain_points`, `benefits`, `objections`, `carousel_objective`, `creative_style`, `extra_context`, `slides_count`, `status`, `result_data` (jsonb — copy gerada), `created_at`. RLS: usuário CRUD próprios registros.
+
+**2. Criar edge function `generate-carousel`**
+
+Fluxo em duas fases dentro da mesma função:
+
+- **Fase 1 — Copy (OpenAI)**: Usa o system prompt e user prompt do spec fornecido, com tool calling para forçar JSON estruturado. Retorna o array de slides com headline, subtext, strategy, cta.
+
+- **Fase 2 — Imagens (Vertex AI / Gemini)**: Para cada slide, constrói um prompt visual combinando:
+  - A copy do slide (headline + subtext + role)
+  - As imagens de referência do usuário (convertidas para base64, mesmo padrão do `generate-creative`)
+  - Estilo/tom informado pelo usuário
+  - Formato fixo 1:1 (ou configurável)
   
-Mantenha a barra superior com o nome do aplicativo "Genius" e os botões de "Entrar" e "Começar Grátis".  
-Na dobra 1 mantenha os botões "Começar Agora" e "Ver Demo".
+  Reutiliza a mesma lógica de autenticação Google (service account JWT → access token) e chamada ao endpoint `gemini-3-pro-image-preview:generateContent` já implementada em `generate-creative`. Gera os slides em paralelo e faz upload ao bucket `generated-creatives`.
 
-### Estrutura das Dobras
+- **Retorno**: JSON com copy completa + array de URLs das imagens geradas (uma por slide).
 
-**Arquivo**: `src/pages/Index.tsx`
+**3. Criar página `CreateCarousel.tsx`**
 
-1. **Nav** — Mantém exatamente como está (logo + Entrar + Começar grátis)
-2. **Dobra 1 — Hero** — Título "Crie criativos profissionais que vendem em segundos", subtítulo com a promessa, lista de 7 benefícios com emojis, CTA "Começar agora". Remover badge "Powered by AI" e botão "Ver demo". Adicionar grid de benefícios abaixo do CTA.
-3. **Dobra 2 — Dor** — Fundo card escuro. Quotes estilizados em itálico/aspas com as 6 frases de dor. Texto de transição "Se você já pensou isso… o problema não é seu produto."
-4. **Dobra 3 — Transição Dor → Solução** — Lista com ❌ dos problemas, seguido do texto "Você não precisa ser criativo. Você precisa de um sistema…" e menção ao Genius ADS.
-5. **Dobra 4 — Passo a passo** — Reutiliza o layout atual de 4 steps (círculos gradient-primary numerados) com a nova copy: Envie imagens → Preencha → Clique em gerar → Baixe e use. Adicionar "Sem travar / Sem pensar demais / Sem perder tempo" abaixo.
-6. **Dobra 5 — O que você recebe** — Grid 3x2 de cards (gradient-card) com ícones, títulos e descrições dos 6 itens.
-7. **Dobra 6 — Para quem serve** — Duas colunas: ✅ "É pra você se" e ❌ "Não é pra você se", cada uma com lista de itens.
-8. **Dobra 7 — Preços** — Grid de 4 cards de pricing (Free, Básico, Pro, Plus) com valores, preço por criativo e CTA principal.
-9. **Dobra 8 — Custo de não comprar** — Seção texto com comparação "Hoje você…" vs "Com o Genius ADS você…"
-10. **Dobra 9 — CTA Final + FAQ** — CTA com botão, seguido de Accordion/lista de FAQ com as 6 perguntas.
-11. **Footer** — Atualiza "CreativeAI" para "Genius ADS" e ano para 2025.
+Formulário com stepper de 3 etapas:
+- **Etapa 1 — Produto**: Upload de imagens de referência (reutiliza componente `ImageUpload`), nome do produto, promessa, slider de quantidade de slides (4-8)
+- **Etapa 2 — Persuasão**: Dores, benefícios, objeções (opcional)
+- **Etapa 3 — Estratégia**: Objetivo do carrossel (select com 5 opções), estilo/tom, contexto extra
+
+Ao submeter: valida créditos (custo = slides_count), cria registro, chama edge function, debita créditos, salva resultados, redireciona.
+
+**4. Criar página `CarouselResults.tsx`**
+
+Exibe o carrossel completo:
+- Cada slide como card visual mostrando a **imagem gerada** com overlay da copy (headline, subtext)
+- Indicador de slide_role e strategy em tooltip/badge
+- Navegação horizontal (swipe/arrows) entre slides
+- Botões: baixar todas as imagens, copiar copy completa, novo carrossel
+
+**5. Atualizar navegação e rotas**
+
+- Adicionar "Novo Carrossel" no `AppSidebar.tsx` (ícone `LayoutList`)
+- Rotas: `/create-carousel` e `/carousel-results/:requestId` no `App.tsx`
+- Registros de carrossel visíveis na página de Histórico
 
 ### Detalhes Técnicos
 
-- **Imports adicionais**: `Accordion, AccordionItem, AccordionTrigger, AccordionContent` de `@/components/ui/accordion` para o FAQ. Novos ícones do Lucide conforme necessário (Brain, Target, Upload, PenTool, Layers, etc.)
-- **Padrões visuais reutilizados**: `gradient-card`, `shadow-card`, `gradient-primary`, `shadow-glow`, `text-gradient`, `font-display`, `text-muted-foreground`, botões `variant="hero"`
-- **Responsividade**: Grids `grid-cols-1 md:grid-cols-2` ou `md:grid-cols-3` conforme o número de itens
-- **Pricing cards**: Destaque no pacote Pro com `border-primary` e badge "Mais popular"
-- **Nenhuma mudança** em CSS, rotas ou outros componentes
+- **Créditos**: 1 crédito por slide (ex: 6 slides = 6 créditos)
+- **Imagens de referência**: Até 4 imagens, upload ao bucket `creative-uploads`, URLs passadas à edge function
+- **Geração de imagens**: Reutiliza `getAccessToken()`, `imageUrlToBase64()` e chamada Vertex AI do `generate-creative`, com prompt adaptado para contexto de slide de carrossel
+- **Prompt de imagem por slide**: Inclui role do slide, headline, subtext, estilo visual e instrução para não renderizar texto na imagem
+- **Modelo copy**: OpenAI via `OPENAI_API_KEY` (já configurado)
+- **Modelo imagem**: Gemini `gemini-3-pro-image-preview` via `GOOGLE_SERVICE_ACCOUNT_JSON` (já configurado)
+- **Armazenamento**: Imagens no bucket `generated-creatives`, registros na tabela `generated_creatives` com `request_id` apontando para `carousel_requests`
+
