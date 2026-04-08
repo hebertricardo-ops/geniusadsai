@@ -1,33 +1,24 @@
 
 
-## Plan: Credit Validation Before Copy Generation
-
-### Problem
-Currently, copy generation (which is free) happens without checking if the user has enough credits to later generate the images. This leads to a frustrating experience where the user goes through the entire copy process only to discover they can't afford the images.
-
-### Solution
-Add a pre-flight credit check **before** generating copies in both generators, and show a dialog when credits are insufficient.
+## Plan: Update Pricing Buttons to Hotmart Checkout Links
 
 ### Changes
 
-**1. Create a reusable `InsufficientCreditsDialog` component**
-- New file: `src/components/InsufficientCreditsDialog.tsx`
-- Uses the existing `Dialog` component
-- Shows: message explaining insufficient credits, current balance, required amount, and a button to navigate to the pricing/credits page
-- Props: `open`, `onClose`, `creditsNeeded`, `creditsAvailable`
+**File: `src/pages/Index.tsx`**
 
-**2. Update `CreateCarousel.tsx`**
-- In `handleGenerateCopy`, before calling the edge function, check `credits.credits_balance >= slidesCount`
-- If insufficient, open the `InsufficientCreditsDialog` with `creditsNeeded = slidesCount` and `creditsAvailable = credits.credits_balance`
-- Block the copy generation entirely until user has enough credits
+1. Add a `checkoutUrl` property to each paid package object:
+   - Básico: `https://pay.hotmart.com/E105290250P?off=1lncai6a&checkoutMode=10`
+   - Pro: `https://pay.hotmart.com/E105290250P?off=0eczkuvh&checkoutMode=10`
+   - Plus: `https://pay.hotmart.com/E105290250P?off=p12z4pm0&checkoutMode=10`
+   - Free: no URL (keeps current `navigate("/auth")` behavior)
 
-**3. Update `CreateCreative.tsx`**
-- In `handleGenerate` (the copy generation step), the check already exists at line 76 (`credits.credits_balance < quantity`) but only shows a toast
-- Replace the toast with the same `InsufficientCreditsDialog` for consistency
-- The `quantity` variable represents how many creatives (images) will be generated, so check against that
+2. Replace the `onClick` handler logic (lines 314-331):
+   - For `free`: keep `navigate("/auth")`
+   - For paid packages: use `window.open(checkoutUrl, '_blank', 'noopener,noreferrer')` to open in a new tab safely
+   - Remove the Stripe `create-checkout` edge function call entirely from the button handler
 
-### Technical Details
-- The dialog will include a "Recarregar Créditos" button that navigates to the pricing page (Dashboard or a dedicated credits page)
-- Both carousel (slidesCount) and creative (quantity) flows will use the same dialog component
-- No backend changes needed — the credit balance is already fetched via `useCredits` hook
+3. Best practices applied:
+   - `rel="noopener,noreferrer"` via `window.open` third argument to prevent tab-napping
+   - Opens in `_blank` target for new tab
+   - No async/await needed — direct link opening, no loading states or error handling complexity
 
