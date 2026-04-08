@@ -230,12 +230,22 @@ const CreateCarousel = () => {
         credits_used: 1,
       });
 
-      // Deduct 1 credit
+      // Deduct 1 credit (fetch fresh balance to avoid stale state)
+      const { data: freshCredits } = await supabase
+        .from("user_credits")
+        .select("credits_balance, credits_used")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!freshCredits || freshCredits.credits_balance < 1) {
+        throw new Error("Créditos insuficientes");
+      }
+
       await supabase
         .from("user_credits")
         .update({
-          credits_balance: (credits?.credits_balance ?? 0) - 1,
-          credits_used: (credits?.credits_used ?? 0) + 1,
+          credits_balance: freshCredits.credits_balance - 1,
+          credits_used: freshCredits.credits_used + 1,
         })
         .eq("user_id", user.id);
 

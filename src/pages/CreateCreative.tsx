@@ -219,13 +219,23 @@ const CreateCreative = () => {
         });
       }
 
-      // 4. Deduct credits
+      // 4. Deduct credits (fetch fresh balance to avoid stale state)
       const usedCredits = generatedImages.length || quantity;
+      const { data: freshCredits } = await supabase
+        .from("user_credits")
+        .select("credits_balance, credits_used")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!freshCredits || freshCredits.credits_balance < usedCredits) {
+        throw new Error("Créditos insuficientes");
+      }
+
       await supabase
         .from("user_credits")
         .update({
-          credits_balance: (credits?.credits_balance ?? 0) - usedCredits,
-          credits_used: (credits?.credits_used ?? 0) + usedCredits,
+          credits_balance: freshCredits.credits_balance - usedCredits,
+          credits_used: freshCredits.credits_used + usedCredits,
         })
         .eq("user_id", user.id);
 
