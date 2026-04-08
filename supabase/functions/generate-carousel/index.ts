@@ -138,10 +138,10 @@ async function generateSlideWithFal(
     falInput.image_urls = referenceImageUrls;
   }
 
-  console.log("[fal.ai] Submitting request to queue...");
+  console.log("[fal.ai] Calling synchronous endpoint...");
 
-  // Step 1: Submit to queue
-  const submitRes = await fetch("https://queue.fal.run/fal-ai/nano-banana-pro/edit", {
+  // Use synchronous endpoint (fal.run) instead of queue
+  const res = await fetch("https://fal.run/fal-ai/nano-banana-pro/edit", {
     method: "POST",
     headers: {
       Authorization: `Key ${FAL_KEY}`,
@@ -150,58 +150,13 @@ async function generateSlideWithFal(
     body: JSON.stringify(falInput),
   });
 
-  if (!submitRes.ok) {
-    const errText = await submitRes.text();
-    throw new Error(`fal.ai submit error (${submitRes.status}): ${errText.substring(0, 500)}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`fal.ai error (${res.status}): ${errText.substring(0, 500)}`);
   }
 
-  const submitData = await submitRes.json();
-  const requestId = submitData.request_id;
-  if (!requestId) throw new Error("fal.ai did not return a request_id");
+  const resultData = await res.json();
 
-  console.log(`[fal.ai] Request submitted: ${requestId}`);
-
-  // Step 2: Poll for completion
-  const maxAttempts = 60;
-  const pollInterval = 2000;
-
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, pollInterval));
-
-    const statusRes = await fetch(
-      `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}/status`,
-      { headers: { Authorization: `Key ${FAL_KEY}` } }
-    );
-
-    if (!statusRes.ok) {
-      console.warn(`[fal.ai] Status check failed (${statusRes.status}), retrying...`);
-      continue;
-    }
-
-    const statusData = await statusRes.json();
-    console.log(`[fal.ai] Status: ${statusData.status} (attempt ${i + 1}/${maxAttempts})`);
-
-    if (statusData.status === "COMPLETED") {
-      break;
-    } else if (statusData.status === "FAILED") {
-      throw new Error(`fal.ai generation failed: ${JSON.stringify(statusData)}`);
-    }
-    // IN_QUEUE or IN_PROGRESS — keep polling
-  }
-
-  // Step 3: Retrieve result
-  const resultRes = await fetch(
-    `https://queue.fal.run/fal-ai/nano-banana-pro/edit/requests/${requestId}`,
-    { headers: { Authorization: `Key ${FAL_KEY}` } }
-  );
-
-  if (!resultRes.ok) {
-    const errText = await resultRes.text();
-    throw new Error(`fal.ai result error (${resultRes.status}): ${errText.substring(0, 500)}`);
-  }
-
-  const resultData = await resultRes.json();
-  
   // Extract image URL from fal.ai response
   const imageUrl = resultData?.images?.[0]?.url || resultData?.image?.url || resultData?.output?.images?.[0]?.url;
   if (!imageUrl) {
