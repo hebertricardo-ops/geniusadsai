@@ -56,7 +56,7 @@ const Auth = () => {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <img src={logoFull} alt="Genius ADS" className="h-20" />
+            <img src={logoFull} alt="Genius ADS" className="h-32" />
           </div>
           <p className="text-muted-foreground">
             {isLogin ? "Entre na sua conta" : "Crie sua conta gratuita"}
