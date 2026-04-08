@@ -311,22 +311,13 @@ const Index = () => {
                 variant="hero"
                 size="sm"
                 className="w-full text-xs whitespace-normal text-center leading-tight py-2"
-                onClick={async () => {
+                onClick={() => {
                   if (packageId === "free") {
                     navigate("/auth");
                     return;
                   }
-                  try {
-                    const { data, error } = await supabase.functions.invoke("create-checkout", {
-                      body: { packageId },
-                    });
-                    if (error) throw error;
-                    if (data?.url) {
-                      window.location.href = data.url;
-                    }
-                  } catch (err: any) {
-                    toast.error("Erro ao iniciar pagamento. Tente novamente.");
-                    console.error(err);
+                  if (checkoutUrl) {
+                    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
                   }
                 }}
               >
