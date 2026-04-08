@@ -479,10 +479,19 @@ async function handleSingleImagePhase(body: any) {
   const accessToken = await getAccessToken(saJson);
 
   let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
-  if (image_urls?.length) {
-    console.log("Converting", image_urls.length, "reference images to base64...");
+  const allRefUrls = [...(image_urls || [])];
+  
+  // Add existing slide images as style references (max 2 to avoid quota issues)
+  if (existing_slide_urls?.length) {
+    const styleRefs = existing_slide_urls.slice(0, 2);
+    allRefUrls.push(...styleRefs);
+    console.log("Including", styleRefs.length, "existing slide(s) as style reference");
+  }
+  
+  if (allRefUrls.length) {
+    console.log("Converting", allRefUrls.length, "reference images to base64...");
     imagesParts = await Promise.all(
-      image_urls.map(async (url: string) => {
+      allRefUrls.map(async (url: string) => {
         const img = await imageUrlToBase64(url);
         return { inlineData: { mimeType: img.mimeType, data: img.data } };
       })
