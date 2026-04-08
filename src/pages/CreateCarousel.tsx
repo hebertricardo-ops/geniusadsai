@@ -598,12 +598,37 @@ const CreateCarousel = () => {
                 </div>
 
                 {/* CTA */}
-                <div>
+                <div className="space-y-3">
                   <Label className="text-foreground font-display mb-2 block">CTA do slide final (opcional)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "Compre agora",
+                      "Saiba mais",
+                      "Garanta o seu",
+                      "Quero aproveitar",
+                      "Comece hoje",
+                      "Fale conosco",
+                      "Teste grátis",
+                      "Aproveite a oferta",
+                    ].map((ctaOption) => (
+                      <button
+                        key={ctaOption}
+                        type="button"
+                        onClick={() => setCarouselCta(carouselCta === ctaOption ? "" : ctaOption)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                          carouselCta === ctaOption
+                            ? "border-primary bg-primary/10 text-primary shadow-md scale-105"
+                            : "border-border bg-background/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                        }`}
+                      >
+                        {ctaOption}
+                      </button>
+                    ))}
+                  </div>
                   <Input
                     value={carouselCta}
                     onChange={(e) => setCarouselCta(e.target.value)}
-                    placeholder="Ex: Compre agora, Saiba mais, Garanta o seu..."
+                    placeholder="Ou digite um CTA personalizado..."
                     className="bg-background/50"
                   />
                 </div>
