@@ -1,4 +1,6 @@
 import { LayoutDashboard, PlusCircle, Clock, UserCircle, LogOut } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
+import logoText from "@/assets/logo-text.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,10 +44,8 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md gradient-primary flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary-foreground">C</span>
-              </div>
-              {!collapsed && <span className="font-display text-foreground">CreativeAI</span>}
+              <img src={logoIcon} alt="Genius ADS" className="w-6 h-6 shrink-0" />
+              {!collapsed && <img src={logoText} alt="Genius ADS" className="h-16" />}
             </div>
           </SidebarGroupLabel>
 
