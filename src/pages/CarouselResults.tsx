@@ -46,7 +46,7 @@ const CarouselResults = () => {
 
   const isLoading = loadingRequest || loadingCreatives;
   const resultData = request?.result_data as any;
-  const slides = resultData?.slides || [];
+  const slides = [...(resultData?.slides || [])].sort((a: any, b: any) => (a.slide_number || 0) - (b.slide_number || 0));
   const isCopyReady = request?.status === "copy_ready";
   const isPartial = creatives.length > 0 && creatives.length < slides.length;
 
