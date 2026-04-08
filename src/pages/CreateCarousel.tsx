@@ -351,20 +351,62 @@ const CreateCarousel = () => {
                         </div>
                       )}
 
-                      {/* Extra images upload + generate button */}
+                      {/* Image source options */}
                       {!state?.imageUrl && (
-                        <div className="mt-4 space-y-3 pt-3 border-t border-border">
-                          <div>
-                            <Label className="text-sm text-muted-foreground mb-2 block">
+                        <div className="mt-4 space-y-4 pt-3 border-t border-border">
+                          {/* Toggle: Upload vs AI */}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSlideStates(prev => prev.map((s, i) => i === idx ? { ...s, useAiImage: false } : s))}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                                !state?.useAiImage
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border bg-background/50 text-muted-foreground hover:border-primary/50"
+                              }`}
+                            >
                               <Upload className="w-3 h-3 inline mr-1" />
-                              Imagens extras para este slide (opcional)
-                            </Label>
-                            <ImageUpload
-                              images={state?.extraImages || []}
-                              onImagesChange={(files) => handleSlideExtraImages(idx, files)}
-                              maxImages={4}
-                            />
+                              Enviar imagens
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSlideStates(prev => prev.map((s, i) => i === idx ? { ...s, useAiImage: true } : s))}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                                state?.useAiImage
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border bg-background/50 text-muted-foreground hover:border-primary/50"
+                              }`}
+                            >
+                              <Sparkles className="w-3 h-3 inline mr-1" />
+                              Gerar com IA
+                            </button>
                           </div>
+
+                          {!state?.useAiImage ? (
+                            <div>
+                              <Label className="text-sm text-muted-foreground mb-2 block">
+                                Imagens extras para este slide (opcional)
+                              </Label>
+                              <ImageUpload
+                                images={state?.extraImages || []}
+                                onImagesChange={(files) => handleSlideExtraImages(idx, files)}
+                                maxImages={4}
+                              />
+                            </div>
+                          ) : (
+                            <div>
+                              <Label className="text-sm text-muted-foreground mb-2 block">
+                                Descreva a imagem que deseja gerar para este slide
+                              </Label>
+                              <Textarea
+                                value={state?.aiPrompt || ""}
+                                onChange={(e) => setSlideStates(prev => prev.map((s, i) => i === idx ? { ...s, aiPrompt: e.target.value } : s))}
+                                placeholder="Ex: produto em cenário futurista com luzes neon, fundo escuro com gradiente..."
+                                className="bg-background/50"
+                                rows={2}
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
 
