@@ -173,7 +173,7 @@ const CreateCarousel = () => {
               <h1 className="text-3xl font-display text-foreground mb-1">Novo Carrossel</h1>
               <p className="text-muted-foreground">Gere a copy e os slides do seu carrossel com IA</p>
             </div>
-            <CreditsBadge />
+            <CreditsBadge credits={credits?.credits_balance ?? 0} />
           </div>
           <Stepper steps={STEPS} currentStep={step} />
         </div>
