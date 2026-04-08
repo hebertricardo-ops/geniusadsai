@@ -1,60 +1,67 @@
 
 
-## Plano: Geração Individual de Slides com Revisão de Copy
+## Plan: Generate Missing Slide Images from Carousel Results Page
 
-### Resumo
+### Problem
+When a carousel has slides without images (partial generation or copy_ready status), the user must go back to the creation flow to generate them. We need to allow generating missing slide images directly from the CarouselResults page while maintaining visual consistency.
 
-Mudar o fluxo para que cada slide tenha seu próprio botão de geração de imagem, eliminando o problema de timeout/quota ao gerar múltiplas imagens numa única chamada. A copy é salva no histórico imediatamente após geração.
+### Approach
 
-### Novo Fluxo
+#### 1. Store Visual Context in carousel_requests
+Add a `visual_context` JSONB column to `carousel_requests` to persist the style, reference image URLs, and product context at creation time. This ensures slides generated later use the same visual parameters.
 
-```text
-Formulário (3 steps) → Gerar Copy → Salva no histórico (status: "copy_ready")
-                                   → Exibe cards com copy de cada slide
-                                   → Cada card tem: upload de imagens extras + botão "Gerar Slide"
-                                   → Usuário gera 1 slide por vez (1 crédito cada)
-                                   → Ao gerar, salva imagem em generated_creatives
+**Migration:**
+```sql
+ALTER TABLE carousel_requests 
+ADD COLUMN visual_context jsonb DEFAULT NULL;
 ```
 
-### Etapas de Implementação
+#### 2. Save Visual Context During Creation (CreateCarousel.tsx)
+After copy generation succeeds and the carousel request is saved, also store the `visual_context` object containing:
+- `creative_style` (selected style)
+- `image_urls` (uploaded reference image URLs)
+- `product_name`
+- `carousel_style_reference`
 
-**1. Atualizar Edge Function `generate-carousel`**
+This happens once at copy generation time, so all future image generations reference the same visual parameters.
 
-Adicionar `phase: "single-image"` que gera apenas **1 slide** por chamada. Recebe: `slide` (objeto com headline/subtext/role), `image_urls`, `product_name`, `creative_style`, `total_slides` (para contexto de posição), `carousel_style_reference` (descrição do estilo visual do carrossel para manter consistência entre slides). Remove a fase `"images"` (batch).
+#### 3. Add "Generate Image" Button on CarouselResults Page
+For each slide without an image (`!currentCreative`), show a "Gerar Imagem (1 crédito)" button. Also add an "Upload" vs "Gerar com IA" toggle, mirroring the CreateCarousel flow.
 
-Para garantir consistência visual entre slides, o prompt incluirá instruções explícitas de estilo compartilhado (paleta de cores, estilo de fundo, tipo de composição) derivadas do `creative_style` e das imagens de referência.
+**Key UI additions in CarouselResults.tsx:**
+- Import `useCredits`, `useQueryClient`, `ImageUpload`, and relevant icons
+- Add state for `generatingSlides` (tracks which slide indices are loading) and `slideOptions` (upload vs AI per slide)
+- On the slide detail panel (right side), when no image exists, render the toggle + generate button
+- On thumbnails, show a "+" overlay for missing slides
 
-**2. Refatorar `CreateCarousel.tsx`**
+#### 4. Generate Image Handler in CarouselResults
+Create `handleGenerateSlideImage(slideIndex)` that:
+1. Reads `visual_context` from the carousel request (style, reference images)
+2. Calls `supabase.functions.invoke("generate-carousel", { phase: "single-image", ... })` with the same parameters used during creation
+3. Saves the result to `generated_creatives`
+4. Deducts 1 credit (fresh fetch pattern)
+5. Logs the credit transaction
+6. Invalidates queries to refresh the UI
+7. If all slides now have images, updates request status to "completed"
 
-Após gerar a copy:
-- Salvar imediatamente no banco (`carousel_requests` com `status: "copy_ready"` e `result_data` com a copy)
-- Exibir os cards de cada slide com:
-  - Badge de role, headline, subtext, strategy
-  - Componente `ImageUpload` individual (imagens extras por slide)
-  - Botão "Gerar Imagem" (1 crédito) por slide
-  - Estado de loading individual por slide
-  - Preview da imagem gerada quando pronta
-  - Botão de regenerar imagem (se já gerada)
-- As imagens de referência do formulário original são enviadas como base para todos os slides
-- Imagens extras por slide são adicionadas ao array de referência daquele slide específico
+#### 5. Visual Consistency Mechanisms
+- **Stored reference images**: The `visual_context.image_urls` are persisted so the same references are sent to Vertex AI regardless of when generation happens
+- **Stored style**: `creative_style` is locked at creation time
+- **Existing prompt instructions**: The edge function already includes "manter consistência visual com os outros slides do carrossel" and the `estilo_global_do_carrossel` block
+- **Pass existing slide images as additional context**: When generating a missing slide, also send 1-2 already-generated slide image URLs as extra visual references so Vertex AI can match the established look
 
-**3. Atualizar `CarouselResults.tsx`**
+#### 6. Enhanced Edge Function (generate-carousel/index.ts)
+Add support for an optional `existing_slide_urls` parameter in the `single-image` phase. When provided, these are included as additional reference images alongside the original product references, giving Vertex AI concrete visual examples of the carousel's established style.
 
-- Buscar slides do `generated_creatives` + copy do `carousel_requests.result_data`
-- Tratar slides sem imagem (copy gerada mas imagem não gerada ainda) — mostrar placeholder
-- Permitir navegar para a página de edição para gerar slides faltantes
+Add a new instruction in the prompt:
+```
+"REFERÊNCIA DE ESTILO: as imagens de referência incluem slides já gerados deste carrossel. 
+Mantenha EXATAMENTE a mesma paleta de cores, estilo tipográfico, elementos decorativos e composição visual."
+```
 
-**4. Créditos**
-
-- Debitar 1 crédito por slide no momento da geração individual
-- Gerar copy continua gratuito
-- Validar saldo antes de cada geração individual
-
-### Detalhes Tecnicos
-
-- **Consistência visual**: O prompt de cada slide incluirá um bloco `estilo_global_do_carrossel` com: paleta derivada do estilo escolhido, tipo de background, elementos visuais recorrentes. Todas as imagens de referência originais são enviadas em todos os slides.
-- **Estado por slide**: Array `slideStates` com `{ loading: boolean, imageUrl: string | null, extraImages: File[] }` para cada slide
-- **Edge function**: A fase `"single-image"` reutiliza a mesma lógica de `generateSlideImage` já existente, mas para 1 slide apenas (sem loop, sem delay)
-- **Upload de imagens extras**: Usa o mesmo componente `ImageUpload` já existente, com `maxImages={4}`
-- **Arquivo afetados**: `generate-carousel/index.ts`, `CreateCarousel.tsx`, `CarouselResults.tsx`
+### Files to Modify
+1. **Migration** — Add `visual_context` column to `carousel_requests`
+2. **src/pages/CreateCarousel.tsx** — Save `visual_context` when creating the request
+3. **src/pages/CarouselResults.tsx** — Add generate UI + handler for missing slides
+4. **supabase/functions/generate-carousel/index.ts** — Accept `existing_slide_urls` for style consistency
 
