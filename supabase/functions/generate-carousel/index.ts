@@ -471,7 +471,7 @@ async function handleSingleImagePhase(body: any) {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  const { slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference, ai_image_prompt } = body;
+  const { slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference, use_ai_image } = body;
   if (!slide || !slide.headline) throw new Error("Missing slide data");
 
   console.log(`Single-image: Generating slide ${slide.slide_number}/${total_slides || "?"} - ${slide.slide_role}`);
@@ -528,7 +528,7 @@ async function handleSingleImagePhase(body: any) {
       "IMPORTANTE: manter consistência visual com os outros slides do carrossel (mesma paleta, mesmo estilo de fundo, mesmos elementos decorativos)",
       slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
       slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
-      ai_image_prompt ? `INSTRUÇÃO VISUAL DO USUÁRIO: ${ai_image_prompt}` : "",
+      use_ai_image ? `GERAÇÃO DE IMAGEM COM IA: crie elementos visuais, ilustrações e cenários que representem o conceito do slide. Contexto do produto: ${product_name}. Função do slide: ${slide.slide_role}. Use criatividade para gerar visuais que complementem os textos e reforcem a mensagem.` : "",
     ].filter(Boolean),
   }, null, 2);
 

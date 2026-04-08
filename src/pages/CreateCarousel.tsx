@@ -48,7 +48,6 @@ interface SlideState {
   loading: boolean;
   imageUrl: string | null;
   extraImages: File[];
-  aiPrompt: string;
   useAiImage: boolean;
 }
 
@@ -126,7 +125,7 @@ const CreateCarousel = () => {
 
       const copy: CarouselCopy = data.copy;
       setGeneratedCopy(copy);
-      setSlideStates(copy.slides.map(() => ({ loading: false, imageUrl: null, extraImages: [], aiPrompt: "", useAiImage: false })));
+      setSlideStates(copy.slides.map(() => ({ loading: false, imageUrl: null, extraImages: [], useAiImage: false })));
 
       // Upload reference images once
       const imageUrls: string[] = [];
@@ -214,7 +213,7 @@ const CreateCarousel = () => {
           creative_style: creativeStyle || null,
           total_slides: generatedCopy.slides.length,
           carousel_style_reference: creativeStyle || "clean premium tecnológico",
-          ai_image_prompt: slideState.useAiImage && slideState.aiPrompt.trim() ? slideState.aiPrompt.trim() : null,
+          use_ai_image: slideState.useAiImage || false,
         },
       });
       if (error) throw error;
@@ -394,18 +393,10 @@ const CreateCarousel = () => {
                               />
                             </div>
                           ) : (
-                            <div>
-                              <Label className="text-sm text-muted-foreground mb-2 block">
-                                Descreva a imagem que deseja gerar para este slide
-                              </Label>
-                              <Textarea
-                                value={state?.aiPrompt || ""}
-                                onChange={(e) => setSlideStates(prev => prev.map((s, i) => i === idx ? { ...s, aiPrompt: e.target.value } : s))}
-                                placeholder="Ex: produto em cenário futurista com luzes neon, fundo escuro com gradiente..."
-                                className="bg-background/50"
-                                rows={2}
-                              />
-                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              <Sparkles className="w-3 h-3 inline mr-1" />
+                              A IA gerará automaticamente uma imagem baseada no contexto deste slide
+                            </p>
                           )}
                         </div>
                       )}
