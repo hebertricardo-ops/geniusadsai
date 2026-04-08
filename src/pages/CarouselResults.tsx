@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, ArrowLeft, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Copy, Info, ImageIcon, AlertCircle, Sparkles, Upload } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Copy, Info, ImageIcon, AlertCircle, Sparkles, Upload, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
