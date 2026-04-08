@@ -22,6 +22,7 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Novo Criativo", url: "/create", icon: PlusCircle },
+  { title: "Novo Carrossel", url: "/create-carousel", icon: LayoutList },
   { title: "Histórico", url: "/history", icon: Clock },
   { title: "Perfil", url: "/profile", icon: UserCircle },
 ];
