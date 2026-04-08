@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, ArrowLeft, CheckCircle2, Image, Loader2, RefreshCw, Copy, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const CreativeResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+  const { toast } = useToast();
 
   const { data: creatives = [], isLoading } = useQuery({
     queryKey: ["creative-results", requestId],
