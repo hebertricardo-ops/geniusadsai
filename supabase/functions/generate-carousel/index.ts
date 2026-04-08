@@ -1,0 +1,422 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+function base64url(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function getAccessToken(saJson: {
+  client_email: string;
+  private_key: string;
+  token_uri: string;
+}): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
+  const payload = base64url(
+    new TextEncoder().encode(
+      JSON.stringify({
+        iss: saJson.client_email,
+        sub: saJson.client_email,
+        aud: saJson.token_uri,
+        scope: "https://www.googleapis.com/auth/cloud-platform",
+        iat: now,
+        exp: now + 3600,
+      })
+    )
+  );
+
+  const pemBody = saJson.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\n/g, "");
+  const binaryKey = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    binaryKey,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(`${header}.${payload}`)
+  );
+  const jwt = `${header}.${payload}.${base64url(signature)}`;
+
+  const tokenRes = await fetch(saJson.token_uri, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+  });
+  if (!tokenRes.ok) {
+    const errText = await tokenRes.text();
+    throw new Error(`Token exchange failed (${tokenRes.status}): ${errText}`);
+  }
+  const tokenData = await tokenRes.json();
+  return tokenData.access_token;
+}
+
+async function imageUrlToBase64(url: string): Promise<{ mimeType: string; data: string }> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status} ${url}`);
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  const base64 = btoa(binary);
+  const contentType = res.headers.get("content-type") || "image/png";
+  return { mimeType: contentType.split(";")[0], data: base64 };
+}
+
+// ─── SYSTEM PROMPT FOR COPY GENERATION ───
+const CAROUSEL_SYSTEM_PROMPT = `Você é um copywriter especialista em marketing direto, Meta Ads, social media e criação de carrosséis estáticos de alta conversão para produtos físicos, digitais e serviços.
+
+Sua tarefa é gerar a copy completa de um carrossel publicitário ou de conteúdo estratégico com base nas informações fornecidas pelo usuário.
+
+O carrossel deve ter entre 4 e 8 slides.
+O último slide deve ser sempre um slide de fechamento com CTA obrigatório.
+Cada slide deve cumprir uma função estratégica dentro de uma progressão lógica de persuasão.
+
+Seu objetivo é criar um carrossel com estrutura forte, clareza, impacto visual, progressão narrativa e potencial de conversão.
+
+REGRAS GERAIS:
+1. Escreva sempre em português do Brasil.
+2. Nunca gere textos genéricos, vagos ou superficiais.
+3. Evite excesso de texto por slide. O conteúdo precisa caber visualmente em um carrossel.
+4. Cada slide deve ter copy curta, clara, forte e visualmente escaneável.
+5. O texto deve soar natural, persuasivo e moderno.
+6. Não use parágrafos longos.
+7. Não repita a mesma ideia em slides diferentes.
+8. O último slide deve conter CTA claro e direto.
+9. A estrutura deve ser adaptada conforme a quantidade de slides.
+10. A copy deve refletir o objetivo do carrossel informado pelo usuário.
+11. Sempre considerar dores, benefícios, objeções, promessa e contexto do produto para construir a narrativa.
+12. Quando fizer sentido, usar linguagem de contraste, curiosidade, especificidade, identificação, desejo e urgência.
+13. O texto deve ser pensado para performance em redes sociais e anúncios.
+14. Gere também uma orientação estratégica curta sobre a função de cada slide.
+15. Sempre mantenha coerência entre os slides, como se fosse uma sequência única e intencional.
+16. Priorize headlines curtas e fortes, com no máximo 12 palavras sempre que possível.
+17. Priorize subtextos curtos, com no máximo 18 palavras sempre que possível.
+18. Nunca escreva como se todos os slides fossem iguais em intensidade. Varie o ritmo da narrativa.
+19. Sempre faça o último slide funcionar como fechamento persuasivo e estímulo de ação.
+
+ESTRUTURA ESTRATÉGICA:
+Você deve distribuir os slides dentro desta lógica, adaptando conforme a quantidade escolhida:
+- Slide 1: Gancho forte
+- Slide 2: Dor, problema ou identificação
+- Slide 3: Agravamento, consequência ou aprofundamento
+- Slide 4: Virada, insight ou nova perspectiva
+- Slide 5: Solução ou apresentação da oferta
+- Slide 6: Benefícios principais
+- Slide 7: Quebra de objeção, reforço ou prova lógica
+- Slide final: CTA
+
+ADAPTAÇÃO POR QUANTIDADE DE SLIDES:
+- Se forem 4 slides: 1.Gancho 2.Dor 3.Solução 4.CTA
+- Se forem 5 slides: 1.Gancho 2.Dor 3.Insight 4.Solução 5.CTA
+- Se forem 6 slides: 1.Gancho 2.Dor 3.Agravamento 4.Solução 5.Benefícios 6.CTA
+- Se forem 7 slides: 1.Gancho 2.Dor 3.Agravamento 4.Insight 5.Solução 6.Benefícios 7.CTA
+- Se forem 8 slides: 1.Gancho 2.Dor 3.Agravamento 4.Insight 5.Solução 6.Benefícios 7.Quebra de objeção 8.CTA
+
+OBJETIVO DO CARROSSEL:
+Adapte o tom e a estrutura conforme o objetivo informado:
+- vender diretamente
+- gerar curiosidade
+- educar / entregar valor
+- quebrar objeções
+- engajar (salvar, compartilhar, comentar)
+
+DIRETRIZES DE COPY:
+- O slide 1 deve prender atenção imediatamente.
+- O slide final deve estimular ação.
+- Use headlines que funcionem bem visualmente.
+- Quando necessário, inclua subtexto curto.
+- Não torne todos os slides exageradamente chamativos. Varie o ritmo da narrativa.
+- Misture impacto, clareza e fluidez.
+- Benefícios devem ser concretos.
+- Objeções devem ser respondidas com lógica simples e convincente.
+- O CTA final deve ser compatível com o contexto da oferta.
+- O texto precisa caber bem em layout de slide.
+- Evite frases longas demais.
+- Sempre pense em performance para Meta Ads e redes sociais.`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+    const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+    if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+    const saJson = JSON.parse(saJsonRaw);
+
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) throw new Error("Missing authorization header");
+
+    const {
+      image_urls,
+      product_name,
+      main_promise,
+      pain_points,
+      benefits,
+      objections,
+      carousel_objective,
+      creative_style,
+      extra_context,
+      slides_count,
+    } = await req.json();
+
+    if (!product_name || !main_promise || !pain_points || !benefits || !carousel_objective)
+      throw new Error("Missing required fields");
+
+    const numSlides = Math.min(Math.max(4, slides_count || 4), 8);
+
+    // ═══════════════════════════════════════════════════════
+    // PHASE 1: Generate copy via OpenAI with tool calling
+    // ═══════════════════════════════════════════════════════
+    console.log("Phase 1: Generating carousel copy via OpenAI...");
+
+    const userPrompt = `Quantidade de slides: ${numSlides}
+Nome do produto: ${product_name}
+Promessa principal: ${main_promise}
+Principais dores: ${pain_points}
+Principais benefícios: ${benefits}
+Principais objeções: ${objections || "Nenhuma informada"}
+Objetivo do carrossel: ${carousel_objective}
+Tom/estilo desejado: ${creative_style || "Não especificado"}
+Informações adicionais: ${extra_context || "Nenhuma"}
+
+Agora gere a copy completa do carrossel.`;
+
+    const slideSchema = {
+      type: "object" as const,
+      properties: {
+        slide_number: { type: "number" as const },
+        slide_role: { type: "string" as const },
+        strategy: { type: "string" as const },
+        headline: { type: "string" as const },
+        subtext: { type: "string" as const },
+        cta: { type: "string" as const },
+      },
+      required: ["slide_number", "slide_role", "strategy", "headline", "subtext", "cta"] as const,
+    };
+
+    const copyResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-5.4-mini",
+        messages: [
+          { role: "system", content: CAROUSEL_SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "generate_carousel",
+              description: "Return the complete carousel copy as structured JSON",
+              parameters: {
+                type: "object",
+                properties: {
+                  carousel_title: { type: "string", description: "Título estratégico interno do carrossel" },
+                  slides_count: { type: "number", description: "Quantidade de slides" },
+                  credits_cost: { type: "number", description: "Custo em créditos (igual a slides_count)" },
+                  objective: { type: "string", description: "Objetivo do carrossel" },
+                  slides: {
+                    type: "array",
+                    description: "Array de slides do carrossel",
+                    items: slideSchema,
+                  },
+                },
+                required: ["carousel_title", "slides_count", "credits_cost", "objective", "slides"],
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "generate_carousel" } },
+      }),
+    });
+
+    if (!copyResponse.ok) {
+      const t = await copyResponse.text();
+      console.error("OpenAI error:", copyResponse.status, t);
+      if (copyResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`OpenAI error (${copyResponse.status})`);
+    }
+
+    const copyData = await copyResponse.json();
+    const toolCall = copyData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) throw new Error("No tool call in OpenAI response");
+
+    const carouselCopy = JSON.parse(toolCall.function.arguments);
+    console.log("Copy generated:", carouselCopy.carousel_title, "-", carouselCopy.slides.length, "slides");
+
+    // ═══════════════════════════════════════════════════════
+    // PHASE 2: Generate slide images via Vertex AI (Gemini)
+    // ═══════════════════════════════════════════════════════
+    console.log("Phase 2: Generating slide images via Vertex AI...");
+
+    const accessToken = await getAccessToken(saJson);
+
+    // Convert reference images to base64
+    let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+    if (image_urls?.length) {
+      console.log("Converting", image_urls.length, "reference images to base64...");
+      imagesParts = await Promise.all(
+        image_urls.map(async (url: string) => {
+          const img = await imageUrlToBase64(url);
+          return { inlineData: { mimeType: img.mimeType, data: img.data } };
+        })
+      );
+    }
+
+    const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
+
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const generateSlideImage = async (slide: any, index: number) => {
+      const slidePrompt = JSON.stringify({
+        tipo: "slide_de_carrossel_publicitario",
+        formato: "1:1",
+        idioma_textos: "português do Brasil",
+        slide_info: {
+          numero: slide.slide_number,
+          funcao: slide.slide_role,
+          headline: slide.headline,
+          subtexto: slide.subtext,
+          cta: slide.cta || null,
+        },
+        produto: product_name,
+        estilo: creative_style || "clean premium tecnológico",
+        instrucoes: [
+          "criar um slide visualmente impactante para carrossel de anúncio",
+          "usar as imagens de referência como base visual quando fornecidas",
+          "NÃO renderizar texto na imagem — apenas compor o visual/layout",
+          "manter design clean, premium e profissional",
+          "garantir que o slide funcione bem em sequência com os demais",
+          "criar background elaborado com elementos visuais contextuais",
+          "incluir efeitos tecnológicos: linhas geométricas, gradientes sutis, overlays",
+          `este é o slide ${slide.slide_number} de ${numSlides} — função: ${slide.slide_role}`,
+          slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
+          slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
+        ].filter(Boolean),
+      }, null, 2);
+
+      const vertexPayload = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: slidePrompt }, ...imagesParts],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["IMAGE"],
+          imageConfig: { aspectRatio: "1:1" },
+        },
+      };
+
+      const res = await fetch(vertexEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(vertexPayload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Vertex AI error for slide ${index + 1} (${res.status}): ${errText.substring(0, 500)}`);
+      }
+
+      const result = await res.json();
+      const candidates = result.candidates || [];
+      for (const candidate of candidates) {
+        const parts = candidate.content?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            return {
+              base64: part.inlineData.data,
+              mimeType: part.inlineData.mimeType || "image/png",
+            };
+          }
+        }
+      }
+      throw new Error(`No image in Vertex AI response for slide ${index + 1}`);
+    };
+
+    // Generate all slide images in parallel
+    const generatedImages = await Promise.all(
+      carouselCopy.slides.map((slide: any, i: number) => generateSlideImage(slide, i))
+    );
+
+    // Upload to storage
+    console.log("Uploading", generatedImages.length, "slide images to storage...");
+    const slideResults = await Promise.all(
+      generatedImages.map(async (img, i) => {
+        const ext = img.mimeType.includes("jpeg") || img.mimeType.includes("jpg") ? "jpg" : "png";
+        const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
+
+        const binaryStr = atob(img.base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let j = 0; j < binaryStr.length; j++) {
+          bytes[j] = binaryStr.charCodeAt(j);
+        }
+
+        const { error } = await supabaseAdmin.storage
+          .from("generated-creatives")
+          .upload(fileName, bytes, { contentType: img.mimeType, upsert: false });
+
+        if (error) throw new Error(`Storage upload failed for slide ${i + 1}: ${error.message}`);
+
+        const { data: urlData } = supabaseAdmin.storage
+          .from("generated-creatives")
+          .getPublicUrl(fileName);
+
+        return {
+          slide_number: carouselCopy.slides[i].slide_number,
+          image_url: urlData.publicUrl,
+        };
+      })
+    );
+
+    console.log("Successfully generated carousel with", slideResults.length, "slides");
+
+    return new Response(
+      JSON.stringify({
+        copy: carouselCopy,
+        slides: slideResults,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    console.error("generate-carousel error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
