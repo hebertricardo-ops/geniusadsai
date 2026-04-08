@@ -47,6 +47,7 @@ const CreateCreative = () => {
   const [cta, setCta] = useState("");
   const [loading, setLoading] = useState(false);
   const [generatedAngles, setGeneratedAngles] = useState<CopyAngle[] | null>(null);
+  const [adCaptions, setAdCaptions] = useState<{ caption: string }[]>([]);
   const [selectedAngle, setSelectedAngle] = useState<number | null>(null);
   const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
   const [expandedAngle, setExpandedAngle] = useState<number | null>(null);
