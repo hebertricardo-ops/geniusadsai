@@ -114,7 +114,7 @@ serve(async (req) => {
         // If trigger didn't fire, create manually
         await supabaseAdmin
           .from("user_credits")
-          .insert({ user_id: userId, credits_balance: credits + 10, credits_used: 0 });
+          .insert({ user_id: userId, credits_balance: credits + 4, credits_used: 0 });
       }
     }
 
