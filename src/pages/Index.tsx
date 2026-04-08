@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.png";
 import logoText from "@/assets/logo-text.png";
+import heroShowcase from "@/assets/hero-showcase.jpeg";
 import {
   Accordion,
   AccordionContent,
@@ -56,6 +57,16 @@ const Index = () => {
           <Button variant="outline" size="lg" onClick={() => navigate("/auth")}>
             Ver demo
           </Button>
+        </div>
+
+        {/* Hero Showcase Image */}
+        <div className="my-12 animate-fade-in">
+          <img
+            src={heroShowcase}
+            alt="Genius ADS - Plataforma de geração de criativos com IA"
+            className="w-full max-w-4xl mx-auto rounded-2xl shadow-2xl"
+            loading="lazy"
+          />
         </div>
 
         {/* Benefícios grid */}
