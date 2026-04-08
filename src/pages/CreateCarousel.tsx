@@ -62,17 +62,20 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const CreateCarousel = () => {
+  const location = useLocation();
+  const prefill = (location.state as any)?.prefill;
+
   const [step, setStep] = useState(0);
   const [images, setImages] = useState<File[]>([]);
-  const [slidesCount, setSlidesCount] = useState(6);
-  const [productName, setProductName] = useState("");
-  const [mainPromise, setMainPromise] = useState("");
-  const [painPoints, setPainPoints] = useState("");
-  const [benefits, setBenefits] = useState("");
-  const [objections, setObjections] = useState("");
-  const [carouselObjective, setCarouselObjective] = useState("vender diretamente");
-  const [creativeStyle, setCreativeStyle] = useState("");
-  const [extraContext, setExtraContext] = useState("");
+  const [slidesCount, setSlidesCount] = useState(prefill?.slides_count ?? 6);
+  const [productName, setProductName] = useState(prefill?.product_name ?? "");
+  const [mainPromise, setMainPromise] = useState(prefill?.main_promise ?? "");
+  const [painPoints, setPainPoints] = useState(prefill?.pain_points ?? "");
+  const [benefits, setBenefits] = useState(prefill?.benefits ?? "");
+  const [objections, setObjections] = useState(prefill?.objections ?? "");
+  const [carouselObjective, setCarouselObjective] = useState(prefill?.carousel_objective ?? "vender diretamente");
+  const [creativeStyle, setCreativeStyle] = useState(prefill?.creative_style ?? "");
+  const [extraContext, setExtraContext] = useState(prefill?.extra_context ?? "");
 
   // Phase states
   const [loadingCopy, setLoadingCopy] = useState(false);
