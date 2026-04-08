@@ -523,6 +523,7 @@ async function handleSingleImagePhase(body: any) {
       "criar background elaborado com elementos visuais contextuais",
       "incluir efeitos tecnológicos: linhas geométricas, gradientes sutis, overlays",
       `este é o slide ${slide.slide_number} de ${total_slides || "?"} — função: ${slide.slide_role}`,
+      "PROIBIDO: NÃO incluir numeração de slide na imagem (ex: 1/6, 2/8, slide 3 de 5, etc). A imagem não deve conter nenhum indicador numérico de posição ou sequência.",
       "IMPORTANTE: manter consistência visual com os outros slides do carrossel (mesma paleta, mesmo estilo de fundo, mesmos elementos decorativos)",
       slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
       slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
