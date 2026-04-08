@@ -8,12 +8,20 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
+const formatWhatsApp = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,6 +30,10 @@ const Auth = () => {
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
+
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWhatsapp(formatWhatsApp(e.target.value));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +48,24 @@ const Auth = () => {
           navigate("/dashboard");
         }
       } else {
-        const { error } = await signUp(email, password, name);
+        const rawWhatsapp = whatsapp.replace(/\D/g, "");
+        if (rawWhatsapp.length < 10) {
+          toast({ title: "WhatsApp inválido", description: "Informe DDD + número com pelo menos 10 dígitos.", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+
+        const { error } = await signUp(email, password, name, rawWhatsapp);
         if (error) {
           toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
         } else {
+          // Fire-and-forget webhook to Make.com
+          fetch("https://hook.us2.make.com/1ifgxwj2g4o47qa1lbo3ab51vumvoydy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, whatsapp: rawWhatsapp }),
+          }).catch(() => {});
+
           toast({
             title: "Conta criada!",
             description: "Verifique seu email para confirmar o cadastro.",
