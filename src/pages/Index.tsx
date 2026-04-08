@@ -175,6 +175,16 @@ const Index = () => {
       </section>
 
       {/* DOBRA 5 — O que você recebe */}
+      {/* Hero Showcase Image */}
+      <div className="max-w-5xl mx-auto px-4 pt-16 pb-8 animate-fade-in">
+        <img
+          src={heroShowcase}
+          alt="Genius ADS - Plataforma de geração de criativos com IA"
+          className="w-full max-w-2xl lg:max-w-3xl mx-auto rounded-2xl shadow-2xl"
+          loading="lazy"
+        />
+      </div>
+
       <section className="max-w-5xl mx-auto px-4 py-20">
         <h2 className="text-2xl md:text-3xl font-display text-foreground mb-12 text-center">
           Tudo que você vai <span className="text-gradient">receber</span>
