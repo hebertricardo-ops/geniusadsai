@@ -508,12 +508,14 @@ const CreateCarousel = () => {
             {/* Step 0: Produto */}
             {step === 0 && (
               <div className="space-y-6">
-                <div>
-                  <Label className="text-foreground font-display mb-2 block">Imagens de referência *</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Envie até 4 imagens do seu produto para servir de referência visual
-                  </p>
-                  <ImageUpload images={images} onImagesChange={setImages} maxImages={4} />
+                <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
+                  <ImageIcon className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Imagens de referência</p>
+                    <p className="text-sm text-muted-foreground">
+                      Após a geração da copy, você poderá enviar imagens do seu produto para cada slide do carrossel.
+                    </p>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-foreground font-display mb-2 block">Nome do produto *</Label>
