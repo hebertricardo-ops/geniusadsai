@@ -278,7 +278,7 @@ const Index = () => {
               features: ["Menor custo por criativo", "Máxima produtividade", "Liberdade total para testar", "Valide ofertas 10x mais rápido", "Acesso imediato"],
               cta: "QUERO ESCALAR AO MÁXIMO",
             },
-          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta, packageId }) => (
+          ].map(({ name, emoji, credits, price, perUnit, highlight, tagline, features, cta, packageId, checkoutUrl }) => (
             <div
               key={name}
               className={`gradient-card rounded-2xl p-7 border shadow-card flex flex-col relative ${
