@@ -141,6 +141,14 @@ const CreateCarousel = () => {
       }
       setUploadedImageUrls(imageUrls);
 
+      // Build visual context for future consistency
+      const visualContext = {
+        creative_style: creativeStyle || null,
+        image_urls: imageUrls,
+        product_name: productName,
+        carousel_style_reference: creativeStyle || "clean premium tecnológico",
+      };
+
       // Save to history immediately as copy_ready
       const { data: request, error: reqError } = await supabase
         .from("carousel_requests")
@@ -157,6 +165,7 @@ const CreateCarousel = () => {
           slides_count: copy.slides.length,
           status: "copy_ready",
           result_data: copy as any,
+          visual_context: visualContext as any,
         })
         .select()
         .single();
