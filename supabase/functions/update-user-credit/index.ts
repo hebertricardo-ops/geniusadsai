@@ -8,9 +8,9 @@ const corsHeaders = {
 };
 
 const CREDITS_MAP: Record<string, number> = {
-  basico: 20,
-  pro: 50,
-  plus: 100,
+  "PACOTE BASICO": 20,
+  "PACOTE PRO": 50,
+  "PACOTE PLUS": 100,
 };
 
 serve(async (req) => {
@@ -39,7 +39,7 @@ serve(async (req) => {
 
     const credits = CREDITS_MAP[packageId];
     if (!credits) {
-      return new Response(JSON.stringify({ error: "packageId inválido. Use: basico, pro, plus" }), {
+      return new Response(JSON.stringify({ error: "packageId inválido. Use: PACOTE BASICO, PACOTE PRO, PACOTE PLUS" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
