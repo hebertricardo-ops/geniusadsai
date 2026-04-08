@@ -610,8 +610,15 @@ async function handleSingleImagePhase(body: any) {
     }
   }
 
+  const isQuotaError = lastError.includes("429") || lastError.includes("RESOURCE_EXHAUSTED");
   return new Response(
-    JSON.stringify({ error: `Falha ao gerar slide ${slide.slide_number}: ${lastError}` }),
-    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    JSON.stringify({
+      error: isQuotaError
+        ? "Limite de requisições atingido. Aguarde alguns minutos e tente novamente."
+        : `Falha ao gerar slide ${slide.slide_number}: ${lastError}`,
+      fallback: isQuotaError,
+      quota_exhausted: isQuotaError,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
