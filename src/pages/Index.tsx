@@ -291,11 +291,11 @@ const Index = () => {
       </section>
 
       {/* Mockup Image */}
-      <section className="max-w-5xl mx-auto px-4 pt-20 pb-8 flex justify-center">
+      <section className="max-w-5xl mx-auto px-4 pt-8 pb-4 flex justify-center">
         <img
           src={mockupImage}
           alt="Genius ADS - Plataforma em dispositivos"
-          className="max-w-full md:max-w-2xl lg:max-w-3xl h-auto"
+          className="max-w-[280px] md:max-w-sm lg:max-w-md h-auto"
           loading="lazy"
         />
       </section>
