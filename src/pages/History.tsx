@@ -240,6 +240,14 @@ const History = () => {
                       >
                         <RefreshCw className="w-4 h-4 mr-1" /> Gerar novos
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteTarget({ type: "creative", id: req.id, name: req.product_name })}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
 
