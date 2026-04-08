@@ -366,8 +366,19 @@ Agora gere a copy completa do carrossel.`;
                   description: "Array de slides do carrossel",
                   items: slideSchema,
                 },
+                ad_captions: {
+                  type: "array",
+                  description: "3 opções de legenda para a postagem do carrossel",
+                  items: {
+                    type: "object",
+                    properties: {
+                      caption: { type: "string", description: "Legenda completa pronta para uso" },
+                    },
+                    required: ["caption"],
+                  },
+                },
               },
-              required: ["carousel_title", "slides_count", "credits_cost", "objective", "slides"],
+              required: ["carousel_title", "slides_count", "credits_cost", "objective", "slides", "ad_captions"],
             },
           },
         },
