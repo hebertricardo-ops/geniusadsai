@@ -1,0 +1,1 @@
+ALTER TABLE public.carousel_requests ADD COLUMN visual_context jsonb DEFAULT NULL;

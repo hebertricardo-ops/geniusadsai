@@ -30,6 +30,7 @@ export type Database = {
           slides_count: number
           status: string
           user_id: string
+          visual_context: Json | null
         }
         Insert: {
           benefits: string
@@ -46,6 +47,7 @@ export type Database = {
           slides_count?: number
           status?: string
           user_id: string
+          visual_context?: Json | null
         }
         Update: {
           benefits?: string
@@ -62,6 +64,7 @@ export type Database = {
           slides_count?: number
           status?: string
           user_id?: string
+          visual_context?: Json | null
         }
         Relationships: []
       }
