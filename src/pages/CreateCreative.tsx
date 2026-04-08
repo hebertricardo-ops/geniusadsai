@@ -114,6 +114,7 @@ const CreateCreative = () => {
       if (copyError) throw copyError;
 
       setGeneratedAngles(copyData.angles);
+      setAdCaptions(copyData.ad_captions || []);
       setSelectedAngle(null);
       setSelectedVisual(null);
 
