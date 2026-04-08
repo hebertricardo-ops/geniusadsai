@@ -1,83 +1,47 @@
 
 
-## Plano Atualizado: Carrossel com Geração de Copy + Imagens dos Slides
+## Plano: Corrigir Erro de Timeout + Fluxo de Seleção de Copy no Carrossel
 
-### Resumo
+### Problema Identificado
 
-A funcionalidade "Novo Carrossel" agora terá **duas etapas de geração**:
-1. **Gerar copy** via OpenAI (igual ao plano anterior) — retorna headline, subtext, strategy para cada slide
-2. **Gerar imagens** de cada slide via Google Vertex AI (Gemini) — usando as imagens de referência do usuário + a copy gerada como prompt, no mesmo padrão da `generate-creative`
+Os logs mostram que a edge function **completou com sucesso** ("Successfully generated carousel with 6 slides"), mas a conexão HTTP foi encerrada antes da resposta chegar ao cliente: `Http: connection closed before message completed`. Isso acontece porque a geração de 6 imagens via Vertex AI leva vários minutos, causando timeout na conexão do browser.
 
-O resultado final é um carrossel completo: copy estruturada + imagens prontas para cada slide.
+### Solução
 
-### Arquitetura
+Separar o fluxo em **duas fases** (igual ao fluxo de criativos):
 
-```text
-┌──────────────────┐     ┌─────────────────────┐     ┌────────────┐
-│  CreateCarousel   │────▶│  generate-carousel   │────▶│  OpenAI    │
-│  (formulário +    │     │  (edge function)     │     │  (copy)    │
-│   upload imagens) │     │                      │────▶│  Vertex AI │
-└───────┬──────────┘     │                      │     │  (imagens) │
-        │                 └──────────┬──────────┘     └────────────┘
-        ▼                            ▼
-┌──────────────────┐     ┌──────────────────────┐
-│ CarouselResults   │◀───│ carousel_requests     │
-│ (slides visuais)  │    │ generated_creatives   │
-└──────────────────┘     └──────────────────────┘
-```
+1. **Fase 1 - Gerar Copy**: Chamar a edge function apenas para gerar a copy via OpenAI (rápido, ~5s). Apresentar os slides gerados ao usuário para revisão/confirmação.
 
-### Etapas de Implementação
+2. **Fase 2 - Gerar Imagens**: Após o usuário confirmar a copy, chamar a edge function novamente para gerar as imagens dos slides (operação longa). Isso resolve o timeout porque o usuário confirma antes da parte pesada.
 
-**1. Criar tabela `carousel_requests`**
+### Etapas
 
-Migration com colunas: `id`, `user_id`, `product_name`, `main_promise`, `pain_points`, `benefits`, `objections`, `carousel_objective`, `creative_style`, `extra_context`, `slides_count`, `status`, `result_data` (jsonb — copy gerada), `created_at`. RLS: usuário CRUD próprios registros.
+**1. Dividir a edge function `generate-carousel` em duas operações**
 
-**2. Criar edge function `generate-carousel`**
+Adicionar um parâmetro `phase` no request body:
+- `phase: "copy"` - Executa apenas a Fase 1 (OpenAI). Retorna o JSON da copy gerada em ~5s. Sem timeout.
+- `phase: "images"` - Recebe a copy já aprovada + image_urls. Gera imagens via Vertex AI e faz upload. Retorna URLs dos slides.
 
-Fluxo em duas fases dentro da mesma função:
+**2. Atualizar `CreateCarousel.tsx` com fluxo de seleção**
 
-- **Fase 1 — Copy (OpenAI)**: Usa o system prompt e user prompt do spec fornecido, com tool calling para forçar JSON estruturado. Retorna o array de slides com headline, subtext, strategy, cta.
+Após submeter o formulário:
+1. Chama `generate-carousel` com `phase: "copy"` 
+2. Exibe os slides gerados (headline, subtext, strategy, slide_role) em cards para o usuário revisar
+3. Usuário confirma ou regenera
+4. Ao confirmar, chama `generate-carousel` com `phase: "images"` passando a copy aprovada
+5. Mostra loading durante geração de imagens
+6. Redireciona para resultados
 
-- **Fase 2 — Imagens (Vertex AI / Gemini)**: Para cada slide, constrói um prompt visual combinando:
-  - A copy do slide (headline + subtext + role)
-  - As imagens de referência do usuário (convertidas para base64, mesmo padrão do `generate-creative`)
-  - Estilo/tom informado pelo usuário
-  - Formato fixo 1:1 (ou configurável)
-  
-  Reutiliza a mesma lógica de autenticação Google (service account JWT → access token) e chamada ao endpoint `gemini-3-pro-image-preview:generateContent` já implementada em `generate-creative`. Gera os slides em paralelo e faz upload ao bucket `generated-creatives`.
+A UI de revisão da copy seguirá o padrão visual do `CreateCreative.tsx`: cards com os slides numerados, badges de slide_role, headline em destaque, subtext e strategy visíveis.
 
-- **Retorno**: JSON com copy completa + array de URLs das imagens geradas (uma por slide).
+**3. Ajustar gerenciamento de créditos**
 
-**3. Criar página `CreateCarousel.tsx`**
+- Créditos debitados apenas na Fase 2 (geração de imagens), não na geração de copy
+- Isso evita cobrar o usuário se ele desistir após ver a copy
 
-Formulário com stepper de 3 etapas:
-- **Etapa 1 — Produto**: Upload de imagens de referência (reutiliza componente `ImageUpload`), nome do produto, promessa, slider de quantidade de slides (4-8)
-- **Etapa 2 — Persuasão**: Dores, benefícios, objeções (opcional)
-- **Etapa 3 — Estratégia**: Objetivo do carrossel (select com 5 opções), estilo/tom, contexto extra
+### Detalhes Tecnicas
 
-Ao submeter: valida créditos (custo = slides_count), cria registro, chama edge function, debita créditos, salva resultados, redireciona.
-
-**4. Criar página `CarouselResults.tsx`**
-
-Exibe o carrossel completo:
-- Cada slide como card visual mostrando a **imagem gerada** com overlay da copy (headline, subtext)
-- Indicador de slide_role e strategy em tooltip/badge
-- Navegação horizontal (swipe/arrows) entre slides
-- Botões: baixar todas as imagens, copiar copy completa, novo carrossel
-
-**5. Atualizar navegação e rotas**
-
-- Adicionar "Novo Carrossel" no `AppSidebar.tsx` (ícone `LayoutList`)
-- Rotas: `/create-carousel` e `/carousel-results/:requestId` no `App.tsx`
-- Registros de carrossel visíveis na página de Histórico
-
-### Detalhes Técnicos
-
-- **Créditos**: 1 crédito por slide (ex: 6 slides = 6 créditos)
-- **Imagens de referência**: Até 4 imagens, upload ao bucket `creative-uploads`, URLs passadas à edge function
-- **Geração de imagens**: Reutiliza `getAccessToken()`, `imageUrlToBase64()` e chamada Vertex AI do `generate-creative`, com prompt adaptado para contexto de slide de carrossel
-- **Prompt de imagem por slide**: Inclui role do slide, headline, subtext, estilo visual e instrução para não renderizar texto na imagem
-- **Modelo copy**: OpenAI via `OPENAI_API_KEY` (já configurado)
-- **Modelo imagem**: Gemini `gemini-3-pro-image-preview` via `GOOGLE_SERVICE_ACCOUNT_JSON` (já configurado)
-- **Armazenamento**: Imagens no bucket `generated-creatives`, registros na tabela `generated_creatives` com `request_id` apontando para `carousel_requests`
+- **Edge function**: Mesma função, roteada pelo campo `phase`
+- **Timeout**: Fase 1 retorna em ~5s. Fase 2 pode levar 2-3 min mas o usuário já sabe o que esperar
+- **Fallback**: Se Fase 2 falhar parcialmente, salvar os slides que foram gerados com sucesso
 
