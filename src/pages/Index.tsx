@@ -273,7 +273,7 @@ const Index = () => {
               cta: "ESCALAR COM O PRO",
             },
             {
-              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false, packageId: "plus",
+              name: "Plus", emoji: "🔥", credits: 100, price: "R$ 129,90", perUnit: "R$ 1,29 por criativo", highlight: false, packageId: "plus", checkoutUrl: "https://pay.hotmart.com/E105290250P?off=p12z4pm0&checkoutMode=10",
               tagline: "Para quem quer dominar o jogo dos criativos",
               features: ["Menor custo por criativo", "Máxima produtividade", "Liberdade total para testar", "Valide ofertas 10x mais rápido", "Acesso imediato"],
               cta: "QUERO ESCALAR AO MÁXIMO",
