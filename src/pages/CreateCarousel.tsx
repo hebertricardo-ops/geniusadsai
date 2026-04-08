@@ -126,7 +126,7 @@ const CreateCarousel = () => {
 
       const copy: CarouselCopy = data.copy;
       setGeneratedCopy(copy);
-      setSlideStates(copy.slides.map(() => ({ loading: false, imageUrl: null, extraImages: [] })));
+      setSlideStates(copy.slides.map(() => ({ loading: false, imageUrl: null, extraImages: [], aiPrompt: "", useAiImage: false })));
 
       // Upload reference images once
       const imageUrls: string[] = [];
