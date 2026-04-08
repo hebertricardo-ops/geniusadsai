@@ -332,8 +332,21 @@ async function handleImagesPhase(body: any) {
         texto_subtexto: slide.subtext,
         texto_cta: slide.cta || null,
       },
+      tipografia: {
+        regra_principal: "TODOS os slides do carrossel DEVEM usar EXATAMENTE a mesma fonte/estilo tipográfico. Consistência tipográfica é OBRIGATÓRIA.",
+        headline: "sans-serif geométrica bold (estilo Montserrat Bold ou similar). Todas as headlines devem usar a MESMA fonte em TODOS os slides.",
+        subtexto: "sans-serif regular/light (estilo Montserrat Regular ou similar). Todos os subtextos devem usar a MESMA fonte em TODOS os slides.",
+        cta: "mesma família tipográfica do headline, em bold ou semibold",
+        proibicoes: [
+          "PROIBIDO usar fontes serifadas em qualquer slide",
+          "PROIBIDO variar o estilo tipográfico entre slides",
+          "PROIBIDO usar fontes manuscritas, cursivas ou decorativas",
+          "PROIBIDO misturar famílias tipográficas diferentes entre slides"
+        ]
+      },
       instrucoes_de_composicao: [
         "OBRIGATÓRIO: renderizar os textos fornecidos (headline, subtexto, cta) diretamente na imagem do slide, em português do Brasil, com tipografia legível e bem posicionada",
+        "TIPOGRAFIA: usar EXATAMENTE a mesma fonte sans-serif geométrica bold para headlines e sans-serif regular para subtextos em TODOS os slides. NÃO variar a font-family entre slides.",
         "o headline deve ter destaque visual (maior, bold, contraste alto)",
         "o subtexto deve aparecer menor, abaixo do headline",
         "se houver CTA, renderizar como botão ou destaque visual no slide",
