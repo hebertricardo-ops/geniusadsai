@@ -1,45 +1,34 @@
 
 
-## Plan: Create `check-user-exists` Edge Function
+## Plano: Campo WhatsApp no cadastro + webhook para Make.com
 
-### What it does
-A simple endpoint that Make.com calls (before or after a Hotmart purchase) to check if a user already exists in the database by email. Returns the user's existence status and current credit balance, so Make.com can decide the next step in the automation flow (add credits to existing user vs. create new user via `create-user-webhook`).
+### O que será feito
+1. Adicionar campo obrigatório "WhatsApp" (DDD + Número) no formulário de cadastro
+2. Salvar o número na tabela `profiles`
+3. Após cadastro bem-sucedido, enviar dados (nome, email, whatsapp) via webhook para o Make.com
 
-### Technical details
+### Alterações
 
-**1. Create `supabase/functions/check-user-exists/index.ts`**
-- Accepts POST with JSON body: `{ email }`
-- Validates the `x-webhook-secret` header (same `WEBHOOK_SECRET` already configured)
-- Uses `SUPABASE_SERVICE_ROLE_KEY` for admin lookup
-- Logic:
-  - Look up user by email via `supabaseAdmin.auth.admin.listUsers()`
-  - If found: return `{ exists: true, userId, email, creditsBalance }`
-  - If not found: return `{ exists: false, email }`
-- No database changes — read-only operation
+**1. Migração de banco — adicionar coluna `whatsapp` na tabela `profiles`**
+- `ALTER TABLE profiles ADD COLUMN whatsapp text;`
 
-**2. No new secrets needed**
-- Reuses the existing `WEBHOOK_SECRET` for security
+**2. Atualizar trigger `handle_new_user`**
+- Salvar o campo `whatsapp` do `user_metadata` na coluna nova do profile
 
-**3. No frontend changes needed**
+**3. Frontend — `src/pages/Auth.tsx`**
+- Adicionar campo "WhatsApp" com placeholder "(11) 99999-9999", visível apenas no cadastro
+- Máscara de formatação: `(DD) NNNNN-NNNN`
+- Campo obrigatório no modo cadastro
+- Validação: mínimo 10 dígitos numéricos
 
-### Expected request
-```json
-POST /check-user-exists
-Header: x-webhook-secret: <secret>
-Body: { "email": "buyer@example.com" }
-```
+**4. Hook de auth — `src/hooks/useAuth.tsx`**
+- Passar `whatsapp` no `user_metadata` do `signUp`
 
-### Expected responses
-```json
-// User exists
-{ "exists": true, "userId": "uuid", "email": "...", "creditsBalance": 24 }
+**5. Webhook para Make.com após cadastro**
+- Após signup bem-sucedido (sem erro), disparar `fetch` POST para `https://hook.us2.make.com/1ifgxwj2g4o47qa1lbo3ab51vumvoydy`
+- Body: `{ name, email, whatsapp }`
+- Disparar de forma fire-and-forget (não bloqueia o fluxo do usuário)
 
-// User not found
-{ "exists": false, "email": "..." }
-```
-
-### Make.com flow
-1. Hotmart purchase triggers Make.com
-2. Make.com calls `check-user-exists` with buyer email
-3. Based on `exists` response, Make.com routes to `create-user-webhook` (handles both new and existing users with credit addition)
+### Sem edge function necessária
+O webhook do Make.com é uma URL pública — pode ser chamado diretamente do frontend após o cadastro, sem necessidade de proxy via edge function.
 
