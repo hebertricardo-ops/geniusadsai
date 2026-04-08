@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import InsufficientCreditsDialog from "@/components/InsufficientCreditsDialog";
 
 const STEPS = ["Produto", "Persuasão", "Estratégia"];
 
