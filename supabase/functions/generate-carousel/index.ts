@@ -164,8 +164,10 @@ serve(async (req) => {
       return await handleCopyPhase(body);
     } else if (phase === "images") {
       return await handleImagesPhase(body);
+    } else if (phase === "single-image") {
+      return await handleSingleImagePhase(body);
     } else {
-      throw new Error("Invalid phase. Must be 'copy' or 'images'.");
+      throw new Error("Invalid phase. Must be 'copy', 'images', or 'single-image'.");
     }
   } catch (e) {
     console.error("generate-carousel error:", e);
