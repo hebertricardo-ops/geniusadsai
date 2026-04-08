@@ -1,20 +1,31 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCredits } from "@/hooks/useCredits";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, ArrowLeft, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Copy, Info, ImageIcon, AlertCircle } from "lucide-react";
+import { Download, Plus, ArrowLeft, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Copy, Info, ImageIcon, AlertCircle, Sparkles, Upload } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import ImageUpload from "@/components/ImageUpload";
+
+interface SlideGenerationState {
+  loading: boolean;
+  useAiImage: boolean;
+  extraImages: File[];
+}
 
 const CarouselResults = () => {
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: credits } = useCredits();
+  const queryClient = useQueryClient();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideGenStates, setSlideGenStates] = useState<Record<number, SlideGenerationState>>({});
 
   const { data: request, isLoading: loadingRequest } = useQuery({
     queryKey: ["carousel-request", requestId],
@@ -46,11 +57,11 @@ const CarouselResults = () => {
 
   const isLoading = loadingRequest || loadingCreatives;
   const resultData = request?.result_data as any;
+  const visualContext = request?.visual_context as any;
   const slides = [...(resultData?.slides || [])].sort((a: any, b: any) => (a.slide_number || 0) - (b.slide_number || 0));
   const isCopyReady = request?.status === "copy_ready";
   const isPartial = creatives.length > 0 && creatives.length < slides.length;
 
-  // Build merged slides: copy + image (if available)
   const mergedSlides = slides.map((slide: any) => {
     const creative = creatives.find((c) => {
       const cd = c.copy_data as any;
@@ -58,6 +69,125 @@ const CarouselResults = () => {
     });
     return { ...slide, creative };
   });
+
+  const getSlideGenState = (idx: number): SlideGenerationState =>
+    slideGenStates[idx] || { loading: false, useAiImage: true, extraImages: [] };
+
+  const updateSlideGenState = (idx: number, updates: Partial<SlideGenerationState>) => {
+    setSlideGenStates(prev => ({
+      ...prev,
+      [idx]: { ...getSlideGenState(idx), ...updates },
+    }));
+  };
+
+  const handleGenerateSlideImage = async (slideIndex: number) => {
+    if (!user || !request || !resultData) return;
+
+    if ((credits?.credits_balance ?? 0) < 1) {
+      toast({ title: "Créditos insuficientes", description: "Você precisa de 1 crédito para gerar este slide.", variant: "destructive" });
+      return;
+    }
+
+    updateSlideGenState(slideIndex, { loading: true });
+
+    try {
+      const slide = slides[slideIndex];
+      const state = getSlideGenState(slideIndex);
+
+      // Upload extra images if any
+      const extraImageUrls: string[] = [];
+      for (const file of state.extraImages) {
+        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
+          .from("creative-uploads")
+          .createSignedUrl(path, 3600);
+        if (signedUrlErr || !signedUrlData?.signedUrl) throw new Error("Failed to create signed URL");
+        extraImageUrls.push(signedUrlData.signedUrl);
+      }
+
+      // Collect existing generated slide URLs for style consistency
+      const existingSlideUrls = creatives
+        .map(c => c.image_url)
+        .filter(Boolean);
+
+      // Reference images from visual context + extra uploads
+      const refImageUrls = [...(visualContext?.image_urls || []), ...extraImageUrls];
+
+      const { data, error } = await supabase.functions.invoke("generate-carousel", {
+        body: {
+          phase: "single-image",
+          slide,
+          image_urls: refImageUrls,
+          product_name: visualContext?.product_name || request.product_name,
+          creative_style: visualContext?.creative_style || request.creative_style,
+          total_slides: slides.length,
+          carousel_style_reference: visualContext?.carousel_style_reference || request.creative_style || "clean premium tecnológico",
+          use_ai_image: state.useAiImage,
+          existing_slide_urls: existingSlideUrls,
+        },
+      });
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      const imageUrl = data.image_url;
+
+      // Save to generated_creatives
+      await supabase.from("generated_creatives").insert({
+        user_id: user.id,
+        image_url: imageUrl,
+        carousel_request_id: requestId,
+        copy_data: {
+          type: "carousel",
+          slide_number: slide.slide_number,
+          ...slide,
+        },
+        credits_used: 1,
+      });
+
+      // Deduct credit
+      const { data: freshCredits } = await supabase
+        .from("user_credits")
+        .select("credits_balance, credits_used")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!freshCredits || freshCredits.credits_balance < 1) throw new Error("Créditos insuficientes");
+
+      await supabase
+        .from("user_credits")
+        .update({
+          credits_balance: freshCredits.credits_balance - 1,
+          credits_used: freshCredits.credits_used + 1,
+        })
+        .eq("user_id", user.id);
+
+      await supabase.from("credit_transactions").insert({
+        user_id: user.id,
+        type: "usage",
+        amount: -1,
+        description: `Slide ${slide.slide_number} do carrossel: ${request.product_name}`,
+      });
+
+      // Check if all slides now have images
+      const newCreativesCount = creatives.length + 1;
+      if (newCreativesCount >= slides.length) {
+        await supabase.from("carousel_requests").update({ status: "completed" }).eq("id", requestId);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["carousel-creatives", requestId] });
+      queryClient.invalidateQueries({ queryKey: ["carousel-request", requestId] });
+
+      updateSlideGenState(slideIndex, { loading: false });
+      toast({ title: `Slide ${slide.slide_number} gerado!`, description: "Imagem criada com sucesso." });
+    } catch (err: any) {
+      console.error(err);
+      updateSlideGenState(slideIndex, { loading: false });
+      toast({ title: `Erro no slide ${slideIndex + 1}`, description: err.message || "Tente novamente.", variant: "destructive" });
+    }
+  };
 
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
@@ -125,10 +255,10 @@ const CarouselResults = () => {
     );
   }
 
-  // Find first slide with an image for the viewer
   const slidesWithImages = mergedSlides.filter((s: any) => s.creative);
   const currentMerged = mergedSlides[currentSlide];
   const currentCreative = currentMerged?.creative;
+  const currentGenState = getSlideGenState(currentSlide);
 
   return (
     <div>
@@ -222,7 +352,7 @@ const CarouselResults = () => {
               )}
             </div>
 
-            {/* Copy info */}
+            {/* Copy info + generate controls */}
             <div className="space-y-4">
               {currentMerged && (
                 <div className="gradient-card rounded-2xl p-6 border border-border shadow-card space-y-4">
@@ -272,6 +402,68 @@ const CarouselResults = () => {
                       </TooltipContent>
                     </Tooltip>
                   </div>
+
+                  {/* Generate controls for missing image */}
+                  {!currentCreative && (
+                    <div className="pt-4 border-t border-border space-y-4">
+                      {/* Toggle: Upload vs AI */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateSlideGenState(currentSlide, { useAiImage: false })}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                            !currentGenState.useAiImage
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background/50 text-muted-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          <Upload className="w-3 h-3 inline mr-1" />
+                          Enviar imagens
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateSlideGenState(currentSlide, { useAiImage: true })}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${
+                            currentGenState.useAiImage
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background/50 text-muted-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          <Sparkles className="w-3 h-3 inline mr-1" />
+                          Gerar com IA
+                        </button>
+                      </div>
+
+                      {!currentGenState.useAiImage ? (
+                        <ImageUpload
+                          images={currentGenState.extraImages}
+                          onImagesChange={(files) => updateSlideGenState(currentSlide, { extraImages: files })}
+                          maxImages={4}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          <Sparkles className="w-3 h-3 inline mr-1" />
+                          A IA gerará automaticamente uma imagem baseada no contexto deste slide
+                        </p>
+                      )}
+
+                      {currentGenState.loading ? (
+                        <Button variant="outline" disabled className="w-full">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Gerando...
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="hero"
+                          className="w-full"
+                          onClick={() => handleGenerateSlideImage(currentSlide)}
+                        >
+                          <ImageIcon className="w-4 h-4" />
+                          Gerar Imagem (1 crédito)
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -283,7 +475,7 @@ const CarouselResults = () => {
               <button
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
-                className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all relative ${
                   currentSlide === idx
                     ? "border-primary ring-2 ring-primary/20"
                     : "border-border hover:border-primary/40 opacity-60 hover:opacity-100"
@@ -297,7 +489,7 @@ const CarouselResults = () => {
                   />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
-                    <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
+                    <Plus className="w-5 h-5 text-primary/60" />
                   </div>
                 )}
               </button>

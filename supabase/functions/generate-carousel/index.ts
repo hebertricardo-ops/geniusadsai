@@ -471,7 +471,7 @@ async function handleSingleImagePhase(body: any) {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  const { slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference, use_ai_image } = body;
+  const { slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference, use_ai_image, existing_slide_urls } = body;
   if (!slide || !slide.headline) throw new Error("Missing slide data");
 
   console.log(`Single-image: Generating slide ${slide.slide_number}/${total_slides || "?"} - ${slide.slide_role}`);
@@ -479,10 +479,19 @@ async function handleSingleImagePhase(body: any) {
   const accessToken = await getAccessToken(saJson);
 
   let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
-  if (image_urls?.length) {
-    console.log("Converting", image_urls.length, "reference images to base64...");
+  const allRefUrls = [...(image_urls || [])];
+  
+  // Add existing slide images as style references (max 2 to avoid quota issues)
+  if (existing_slide_urls?.length) {
+    const styleRefs = existing_slide_urls.slice(0, 2);
+    allRefUrls.push(...styleRefs);
+    console.log("Including", styleRefs.length, "existing slide(s) as style reference");
+  }
+  
+  if (allRefUrls.length) {
+    console.log("Converting", allRefUrls.length, "reference images to base64...");
     imagesParts = await Promise.all(
-      image_urls.map(async (url: string) => {
+      allRefUrls.map(async (url: string) => {
         const img = await imageUrlToBase64(url);
         return { inlineData: { mimeType: img.mimeType, data: img.data } };
       })
@@ -526,6 +535,7 @@ async function handleSingleImagePhase(body: any) {
       `este é o slide ${slide.slide_number} de ${total_slides || "?"} — função: ${slide.slide_role}`,
       "PROIBIDO: NÃO incluir numeração de slide na imagem (ex: 1/6, 2/8, slide 3 de 5, etc). A imagem não deve conter nenhum indicador numérico de posição ou sequência.",
       "IMPORTANTE: manter consistência visual com os outros slides do carrossel (mesma paleta, mesmo estilo de fundo, mesmos elementos decorativos)",
+      existing_slide_urls?.length ? "REFERÊNCIA DE ESTILO: as imagens de referência incluem slides já gerados deste carrossel. Mantenha EXATAMENTE a mesma paleta de cores, estilo tipográfico, elementos decorativos e composição visual." : "",
       slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
       slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
       use_ai_image ? `GERAÇÃO DE IMAGEM COM IA: crie elementos visuais, ilustrações e cenários que representem o conceito do slide. Contexto do produto: ${product_name}. Função do slide: ${slide.slide_role}. Use criatividade para gerar visuais que complementem os textos e reforcem a mensagem.` : "",
