@@ -106,6 +106,14 @@ const CreateCarousel = () => {
   // Phase 1: Generate copy only
   const handleGenerateCopy = async () => {
     if (!user) return;
+
+    const creditsNeeded = slidesCount;
+    const creditsAvailable = credits?.credits_balance ?? 0;
+    if (creditsAvailable < creditsNeeded) {
+      setIsCreditsDialogOpen(true);
+      return;
+    }
+
     setLoadingCopy(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-carousel", {
