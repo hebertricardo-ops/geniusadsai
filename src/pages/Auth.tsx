@@ -97,6 +97,12 @@ const Auth = () => {
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="bg-background/50 border-border" />
               </div>
             )}
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp" className="text-sm text-muted-foreground">WhatsApp (DDD + Número)</Label>
+                <Input id="whatsapp" type="tel" value={whatsapp} onChange={handleWhatsAppChange} placeholder="(11) 99999-9999" className="bg-background/50 border-border" required />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="bg-background/50 border-border" required />
