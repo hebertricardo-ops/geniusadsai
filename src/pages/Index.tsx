@@ -267,7 +267,7 @@ const Index = () => {
               cta: "COMEÇAR COM O BÁSICO",
             },
             {
-              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true, packageId: "pro",
+              name: "Pro", emoji: "🚀", credits: 50, price: "R$ 99,90", perUnit: "R$ 1,99 por criativo", highlight: true, packageId: "pro", checkoutUrl: "https://pay.hotmart.com/E105290250P?off=0eczkuvh&checkoutMode=10",
               tagline: "Para quem quer performance e consistência",
               features: ["Melhor custo-benefício", "Volume + velocidade de execução", "Acelera validação de campanhas", "Custo ainda mais baixo por criativo", "Acesso imediato"],
               cta: "ESCALAR COM O PRO",
