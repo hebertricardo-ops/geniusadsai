@@ -139,6 +139,8 @@ const History = () => {
   };
 
   const isLoading = loadingCreatives || loadingCarousels;
+
+  type HistoryItem =
     | { type: "creative"; data: (typeof requests)[0]; createdAt: string }
     | { type: "carousel"; data: (typeof carouselRequests)[0]; createdAt: string };
 
