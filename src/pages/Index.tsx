@@ -21,6 +21,7 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   return (
     <div className="min-h-screen gradient-hero">
