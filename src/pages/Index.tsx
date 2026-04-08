@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.png";
 import logoText from "@/assets/logo-text.png";
+import heroShowcase from "@/assets/hero-showcase.jpeg";
 import {
   Accordion,
   AccordionContent,
