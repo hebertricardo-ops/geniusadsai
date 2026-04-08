@@ -372,15 +372,53 @@ async function handleImagesPhase(body: any) {
     throw new Error(`No image in Vertex AI response for slide ${index + 1}`);
   };
 
-  // Generate all slide images in parallel
-  const generatedImages = await Promise.all(
-    copy.slides.map((slide: any, i: number) => generateSlideImage(slide, i))
-  );
+  // Generate slide images sequentially to avoid rate limits
+  const generatedImages: Array<{ base64: string; mimeType: string; index: number } | null> = [];
+  for (let i = 0; i < copy.slides.length; i++) {
+    const slide = copy.slides[i];
+    let lastError: string | null = null;
+    let success = false;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        if (attempt > 0) {
+          const delay = Math.min(5000 * Math.pow(2, attempt - 1), 30000);
+          console.log(`Retry ${attempt} for slide ${i + 1}, waiting ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+        const img = await generateSlideImage(slide, i);
+        generatedImages.push({ ...img, index: i });
+        success = true;
+        console.log(`Slide ${i + 1}/${copy.slides.length} generated successfully`);
+        // Small delay between slides to avoid rate limits
+        if (i < copy.slides.length - 1) await new Promise(r => setTimeout(r, 2000));
+        break;
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e);
+        console.error(`Slide ${i + 1} attempt ${attempt + 1} failed:`, lastError);
+        if (!lastError.includes("429") && !lastError.includes("RESOURCE_EXHAUSTED")) break;
+      }
+    }
+
+    if (!success) {
+      console.error(`Slide ${i + 1} failed permanently: ${lastError}`);
+      generatedImages.push(null);
+    }
+  }
+
+  const successfulImages = generatedImages.filter((img): img is NonNullable<typeof img> => img !== null);
+
+  if (successfulImages.length === 0) {
+    return new Response(
+      JSON.stringify({ error: "Todas as imagens falharam. Tente novamente em alguns minutos.", fallback: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
   // Upload to storage
-  console.log("Uploading", generatedImages.length, "slide images to storage...");
+  console.log("Uploading", successfulImages.length, "slide images to storage...");
   const slideResults = await Promise.all(
-    generatedImages.map(async (img: any, i: number) => {
+    successfulImages.map(async (img) => {
       const ext = img.mimeType.includes("jpeg") || img.mimeType.includes("jpg") ? "jpg" : "png";
       const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
       const binaryStr = atob(img.base64);
@@ -390,17 +428,22 @@ async function handleImagesPhase(body: any) {
       const { error } = await supabaseAdmin.storage
         .from("generated-creatives")
         .upload(fileName, bytes, { contentType: img.mimeType, upsert: false });
-      if (error) throw new Error(`Storage upload failed for slide ${i + 1}: ${error.message}`);
+      if (error) throw new Error(`Storage upload failed for slide ${img.index + 1}: ${error.message}`);
 
       const { data: urlData } = supabaseAdmin.storage.from("generated-creatives").getPublicUrl(fileName);
-      return { slide_number: copy.slides[i].slide_number, image_url: urlData.publicUrl };
+      return { slide_number: copy.slides[img.index].slide_number, image_url: urlData.publicUrl };
     })
   );
 
-  console.log("Successfully generated", slideResults.length, "slide images");
+  const failedCount = copy.slides.length - successfulImages.length;
+  console.log(`Generated ${slideResults.length}/${copy.slides.length} slide images (${failedCount} failed)`);
 
   return new Response(
-    JSON.stringify({ slides: slideResults }),
+    JSON.stringify({ 
+      slides: slideResults,
+      partial: failedCount > 0,
+      failed_count: failedCount,
+    }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
