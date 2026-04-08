@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import RegenerateCreative from "./pages/RegenerateCreative";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import ChangePassword from "./pages/ChangePassword";
+import AddCredits from "./pages/AddCredits";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/carousel-results/:requestId" element={<ProtectedWithLayout><CarouselResults /></ProtectedWithLayout>} />
             <Route path="/history" element={<ProtectedWithLayout><History /></ProtectedWithLayout>} />
             <Route path="/regenerate" element={<ProtectedWithLayout><RegenerateCreative /></ProtectedWithLayout>} />
+            <Route path="/add-credits" element={<ProtectedWithLayout><AddCredits /></ProtectedWithLayout>} />
             <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
