@@ -214,6 +214,7 @@ const CreateCarousel = () => {
           creative_style: creativeStyle || null,
           total_slides: generatedCopy.slides.length,
           carousel_style_reference: creativeStyle || "clean premium tecnológico",
+          ai_image_prompt: slideState.useAiImage && slideState.aiPrompt.trim() ? slideState.aiPrompt.trim() : null,
         },
       });
       if (error) throw error;
