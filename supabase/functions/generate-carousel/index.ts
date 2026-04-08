@@ -528,6 +528,7 @@ async function handleSingleImagePhase(body: any) {
       "IMPORTANTE: manter consistência visual com os outros slides do carrossel (mesma paleta, mesmo estilo de fundo, mesmos elementos decorativos)",
       slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
       slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
+      ai_image_prompt ? `INSTRUÇÃO VISUAL DO USUÁRIO: ${ai_image_prompt}` : "",
     ].filter(Boolean),
   }, null, 2);
 
