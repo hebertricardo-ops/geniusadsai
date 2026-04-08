@@ -289,6 +289,16 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Mockup Image */}
+      <section className="max-w-5xl mx-auto px-4 pt-20 pb-8 flex justify-center">
+        <img
+          src={mockupImage}
+          alt="Genius ADS - Plataforma em dispositivos"
+          className="max-w-full md:max-w-2xl lg:max-w-3xl h-auto"
+          loading="lazy"
+        />
+      </section>
+
       {/* DOBRA 7 — Preços */}
       <section className="max-w-5xl mx-auto px-4 py-20">
         <h2 className="text-2xl md:text-3xl font-display text-foreground mb-12 text-center">
