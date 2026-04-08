@@ -154,43 +154,45 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
-
-    const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-    const saJson = JSON.parse(saJsonRaw);
-
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("Missing authorization header");
 
-    const {
-      image_urls,
-      product_name,
-      main_promise,
-      pain_points,
-      benefits,
-      objections,
-      carousel_objective,
-      creative_style,
-      extra_context,
-      slides_count,
-    } = await req.json();
+    const body = await req.json();
+    const { phase } = body;
 
-    if (!product_name || !main_promise || !pain_points || !benefits || !carousel_objective)
-      throw new Error("Missing required fields");
+    if (phase === "copy") {
+      return await handleCopyPhase(body);
+    } else if (phase === "images") {
+      return await handleImagesPhase(body);
+    } else {
+      throw new Error("Invalid phase. Must be 'copy' or 'images'.");
+    }
+  } catch (e) {
+    console.error("generate-carousel error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
 
-    const numSlides = Math.min(Math.max(4, slides_count || 4), 8);
+// ═══════════════════════════════════════════════════════
+// PHASE 1: Generate copy only (fast, ~5s)
+// ═══════════════════════════════════════════════════════
+async function handleCopyPhase(body: any) {
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    // ═══════════════════════════════════════════════════════
-    // PHASE 1: Generate copy via OpenAI with tool calling
-    // ═══════════════════════════════════════════════════════
-    console.log("Phase 1: Generating carousel copy via OpenAI...");
+  const { product_name, main_promise, pain_points, benefits, objections, carousel_objective, creative_style, extra_context, slides_count } = body;
 
-    const userPrompt = `Quantidade de slides: ${numSlides}
+  if (!product_name || !main_promise || !pain_points || !benefits || !carousel_objective)
+    throw new Error("Missing required fields");
+
+  const numSlides = Math.min(Math.max(4, slides_count || 4), 8);
+
+  console.log("Phase 1 (copy): Generating carousel copy via OpenAI...");
+
+  const userPrompt = `Quantidade de slides: ${numSlides}
 Nome do produto: ${product_name}
 Promessa principal: ${main_promise}
 Principais dores: ${pain_points}
@@ -202,221 +204,203 @@ Informações adicionais: ${extra_context || "Nenhuma"}
 
 Agora gere a copy completa do carrossel.`;
 
-    const slideSchema = {
-      type: "object" as const,
-      properties: {
-        slide_number: { type: "number" as const },
-        slide_role: { type: "string" as const },
-        strategy: { type: "string" as const },
-        headline: { type: "string" as const },
-        subtext: { type: "string" as const },
-        cta: { type: "string" as const },
-      },
-      required: ["slide_number", "slide_role", "strategy", "headline", "subtext", "cta"] as const,
-    };
+  const slideSchema = {
+    type: "object" as const,
+    properties: {
+      slide_number: { type: "number" as const },
+      slide_role: { type: "string" as const },
+      strategy: { type: "string" as const },
+      headline: { type: "string" as const },
+      subtext: { type: "string" as const },
+      cta: { type: "string" as const },
+    },
+    required: ["slide_number", "slide_role", "strategy", "headline", "subtext", "cta"] as const,
+  };
 
-    const copyResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-5.4-mini",
-        messages: [
-          { role: "system", content: CAROUSEL_SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "generate_carousel",
-              description: "Return the complete carousel copy as structured JSON",
-              parameters: {
-                type: "object",
-                properties: {
-                  carousel_title: { type: "string", description: "Título estratégico interno do carrossel" },
-                  slides_count: { type: "number", description: "Quantidade de slides" },
-                  credits_cost: { type: "number", description: "Custo em créditos (igual a slides_count)" },
-                  objective: { type: "string", description: "Objetivo do carrossel" },
-                  slides: {
-                    type: "array",
-                    description: "Array de slides do carrossel",
-                    items: slideSchema,
-                  },
+  const copyResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-5.4-mini",
+      messages: [
+        { role: "system", content: CAROUSEL_SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "generate_carousel",
+            description: "Return the complete carousel copy as structured JSON",
+            parameters: {
+              type: "object",
+              properties: {
+                carousel_title: { type: "string", description: "Título estratégico interno do carrossel" },
+                slides_count: { type: "number", description: "Quantidade de slides" },
+                credits_cost: { type: "number", description: "Custo em créditos (igual a slides_count)" },
+                objective: { type: "string", description: "Objetivo do carrossel" },
+                slides: {
+                  type: "array",
+                  description: "Array de slides do carrossel",
+                  items: slideSchema,
                 },
-                required: ["carousel_title", "slides_count", "credits_cost", "objective", "slides"],
               },
+              required: ["carousel_title", "slides_count", "credits_cost", "objective", "slides"],
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "generate_carousel" } },
-      }),
-    });
-
-    if (!copyResponse.ok) {
-      const t = await copyResponse.text();
-      console.error("OpenAI error:", copyResponse.status, t);
-      if (copyResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`OpenAI error (${copyResponse.status})`);
-    }
-
-    const copyData = await copyResponse.json();
-    const toolCall = copyData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error("No tool call in OpenAI response");
-
-    const carouselCopy = JSON.parse(toolCall.function.arguments);
-    console.log("Copy generated:", carouselCopy.carousel_title, "-", carouselCopy.slides.length, "slides");
-
-    // ═══════════════════════════════════════════════════════
-    // PHASE 2: Generate slide images via Vertex AI (Gemini)
-    // ═══════════════════════════════════════════════════════
-    console.log("Phase 2: Generating slide images via Vertex AI...");
-
-    const accessToken = await getAccessToken(saJson);
-
-    // Convert reference images to base64
-    let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
-    if (image_urls?.length) {
-      console.log("Converting", image_urls.length, "reference images to base64...");
-      imagesParts = await Promise.all(
-        image_urls.map(async (url: string) => {
-          const img = await imageUrlToBase64(url);
-          return { inlineData: { mimeType: img.mimeType, data: img.data } };
-        })
-      );
-    }
-
-    const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
-
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    const generateSlideImage = async (slide: any, index: number) => {
-      const slidePrompt = JSON.stringify({
-        tipo: "slide_de_carrossel_publicitario",
-        formato: "1:1",
-        idioma_textos: "português do Brasil",
-        slide_info: {
-          numero: slide.slide_number,
-          funcao: slide.slide_role,
-          headline: slide.headline,
-          subtexto: slide.subtext,
-          cta: slide.cta || null,
         },
-        produto: product_name,
-        estilo: creative_style || "clean premium tecnológico",
-        instrucoes: [
-          "criar um slide visualmente impactante para carrossel de anúncio",
-          "usar as imagens de referência como base visual quando fornecidas",
-          "NÃO renderizar texto na imagem — apenas compor o visual/layout",
-          "manter design clean, premium e profissional",
-          "garantir que o slide funcione bem em sequência com os demais",
-          "criar background elaborado com elementos visuais contextuais",
-          "incluir efeitos tecnológicos: linhas geométricas, gradientes sutis, overlays",
-          `este é o slide ${slide.slide_number} de ${numSlides} — função: ${slide.slide_role}`,
-          slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
-          slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
-        ].filter(Boolean),
-      }, null, 2);
+      ],
+      tool_choice: { type: "function", function: { name: "generate_carousel" } },
+    }),
+  });
 
-      const vertexPayload = {
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: slidePrompt }, ...imagesParts],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["IMAGE"],
-          imageConfig: { aspectRatio: "1:1" },
-        },
-      };
-
-      const res = await fetch(vertexEndpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(vertexPayload),
+  if (!copyResponse.ok) {
+    const t = await copyResponse.text();
+    console.error("OpenAI error:", copyResponse.status, t);
+    if (copyResponse.status === 429) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    throw new Error(`OpenAI error (${copyResponse.status})`);
+  }
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Vertex AI error for slide ${index + 1} (${res.status}): ${errText.substring(0, 500)}`);
-      }
+  const copyData = await copyResponse.json();
+  const toolCall = copyData.choices?.[0]?.message?.tool_calls?.[0];
+  if (!toolCall) throw new Error("No tool call in OpenAI response");
 
-      const result = await res.json();
-      const candidates = result.candidates || [];
-      for (const candidate of candidates) {
-        const parts = candidate.content?.parts || [];
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            return {
-              base64: part.inlineData.data,
-              mimeType: part.inlineData.mimeType || "image/png",
-            };
-          }
-        }
-      }
-      throw new Error(`No image in Vertex AI response for slide ${index + 1}`);
-    };
+  const carouselCopy = JSON.parse(toolCall.function.arguments);
+  console.log("Copy generated:", carouselCopy.carousel_title, "-", carouselCopy.slides.length, "slides");
 
-    // Generate all slide images in parallel
-    const generatedImages = await Promise.all(
-      carouselCopy.slides.map((slide: any, i: number) => generateSlideImage(slide, i))
-    );
+  return new Response(
+    JSON.stringify({ copy: carouselCopy }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
 
-    // Upload to storage
-    console.log("Uploading", generatedImages.length, "slide images to storage...");
-    const slideResults = await Promise.all(
-      generatedImages.map(async (img, i) => {
-        const ext = img.mimeType.includes("jpeg") || img.mimeType.includes("jpg") ? "jpg" : "png";
-        const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
+// ═══════════════════════════════════════════════════════
+// PHASE 2: Generate images from approved copy (slow)
+// ═══════════════════════════════════════════════════════
+async function handleImagesPhase(body: any) {
+  const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+  const saJson = JSON.parse(saJsonRaw);
 
-        const binaryStr = atob(img.base64);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let j = 0; j < binaryStr.length; j++) {
-          bytes[j] = binaryStr.charCodeAt(j);
-        }
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-        const { error } = await supabaseAdmin.storage
-          .from("generated-creatives")
-          .upload(fileName, bytes, { contentType: img.mimeType, upsert: false });
+  const { image_urls, copy, product_name, creative_style, slides_count } = body;
+  if (!copy?.slides?.length) throw new Error("Missing approved copy data");
 
-        if (error) throw new Error(`Storage upload failed for slide ${i + 1}: ${error.message}`);
+  const numSlides = copy.slides.length;
+  console.log("Phase 2 (images): Generating", numSlides, "slide images via Vertex AI...");
 
-        const { data: urlData } = supabaseAdmin.storage
-          .from("generated-creatives")
-          .getPublicUrl(fileName);
+  const accessToken = await getAccessToken(saJson);
 
-        return {
-          slide_number: carouselCopy.slides[i].slide_number,
-          image_url: urlData.publicUrl,
-        };
+  let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+  if (image_urls?.length) {
+    console.log("Converting", image_urls.length, "reference images to base64...");
+    imagesParts = await Promise.all(
+      image_urls.map(async (url: string) => {
+        const img = await imageUrlToBase64(url);
+        return { inlineData: { mimeType: img.mimeType, data: img.data } };
       })
     );
-
-    console.log("Successfully generated carousel with", slideResults.length, "slides");
-
-    return new Response(
-      JSON.stringify({
-        copy: carouselCopy,
-        slides: slideResults,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (e) {
-    console.error("generate-carousel error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   }
-});
+
+  const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  const generateSlideImage = async (slide: any, index: number) => {
+    const slidePrompt = JSON.stringify({
+      tipo: "slide_de_carrossel_publicitario",
+      formato: "1:1",
+      idioma_textos: "português do Brasil",
+      slide_info: {
+        numero: slide.slide_number,
+        funcao: slide.slide_role,
+        headline: slide.headline,
+        subtexto: slide.subtext,
+        cta: slide.cta || null,
+      },
+      produto: product_name,
+      estilo: creative_style || "clean premium tecnológico",
+      instrucoes: [
+        "criar um slide visualmente impactante para carrossel de anúncio",
+        "usar as imagens de referência como base visual quando fornecidas",
+        "NÃO renderizar texto na imagem — apenas compor o visual/layout",
+        "manter design clean, premium e profissional",
+        "garantir que o slide funcione bem em sequência com os demais",
+        "criar background elaborado com elementos visuais contextuais",
+        "incluir efeitos tecnológicos: linhas geométricas, gradientes sutis, overlays",
+        `este é o slide ${slide.slide_number} de ${numSlides} — função: ${slide.slide_role}`,
+        slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
+        slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
+      ].filter(Boolean),
+    }, null, 2);
+
+    const vertexPayload = {
+      contents: [{ role: "user", parts: [{ text: slidePrompt }, ...imagesParts] }],
+      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "1:1" } },
+    };
+
+    const res = await fetch(vertexEndpoint, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(vertexPayload),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Vertex AI error for slide ${index + 1} (${res.status}): ${errText.substring(0, 500)}`);
+    }
+
+    const result = await res.json();
+    const candidates = result.candidates || [];
+    for (const candidate of candidates) {
+      const parts = candidate.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          return { base64: part.inlineData.data, mimeType: part.inlineData.mimeType || "image/png" };
+        }
+      }
+    }
+    throw new Error(`No image in Vertex AI response for slide ${index + 1}`);
+  };
+
+  // Generate all slide images in parallel
+  const generatedImages = await Promise.all(
+    copy.slides.map((slide: any, i: number) => generateSlideImage(slide, i))
+  );
+
+  // Upload to storage
+  console.log("Uploading", generatedImages.length, "slide images to storage...");
+  const slideResults = await Promise.all(
+    generatedImages.map(async (img: any, i: number) => {
+      const ext = img.mimeType.includes("jpeg") || img.mimeType.includes("jpg") ? "jpg" : "png";
+      const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
+      const binaryStr = atob(img.base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
+
+      const { error } = await supabaseAdmin.storage
+        .from("generated-creatives")
+        .upload(fileName, bytes, { contentType: img.mimeType, upsert: false });
+      if (error) throw new Error(`Storage upload failed for slide ${i + 1}: ${error.message}`);
+
+      const { data: urlData } = supabaseAdmin.storage.from("generated-creatives").getPublicUrl(fileName);
+      return { slide_number: copy.slides[i].slide_number, image_url: urlData.publicUrl };
+    })
+  );
+
+  console.log("Successfully generated", slideResults.length, "slide images");
+
+  return new Response(
+    JSON.stringify({ slides: slideResults }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
