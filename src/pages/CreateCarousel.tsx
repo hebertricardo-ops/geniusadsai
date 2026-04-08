@@ -116,6 +116,7 @@ const CreateCarousel = () => {
           carousel_objective: carouselObjective,
           creative_style: creativeStyle || null,
           extra_context: extraContext || null,
+          cta: carouselCta || null,
           slides_count: slidesCount,
         },
       });
