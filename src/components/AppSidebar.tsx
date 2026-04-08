@@ -1,4 +1,6 @@
 import { LayoutDashboard, PlusCircle, Clock, UserCircle, LogOut } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
+import logoText from "@/assets/logo-text.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
