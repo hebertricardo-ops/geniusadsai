@@ -382,16 +382,20 @@ async function handleImagesPhase(body: any) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         if (attempt > 0) {
-          const delay = Math.min(5000 * Math.pow(2, attempt - 1), 30000);
+          const delay = Math.min(10000 * Math.pow(2, attempt - 1), 60000);
           console.log(`Retry ${attempt} for slide ${i + 1}, waiting ${delay}ms...`);
           await new Promise(r => setTimeout(r, delay));
         }
+        const startTime = Date.now();
         const img = await generateSlideImage(slide, i);
         generatedImages.push({ ...img, index: i });
         success = true;
-        console.log(`Slide ${i + 1}/${copy.slides.length} generated successfully`);
-        // Small delay between slides to avoid rate limits
-        if (i < copy.slides.length - 1) await new Promise(r => setTimeout(r, 2000));
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`Slide ${i + 1}/${copy.slides.length} generated successfully in ${elapsed}s`);
+        if (i < copy.slides.length - 1) {
+          console.log(`Waiting 8s before next slide...`);
+          await new Promise(r => setTimeout(r, 8000));
+        }
         break;
       } catch (e) {
         lastError = e instanceof Error ? e.message : String(e);
