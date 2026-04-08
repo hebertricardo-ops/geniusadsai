@@ -94,7 +94,7 @@ const CreateCarousel = () => {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return images.length > 0 && productName.trim() && mainPromise.trim();
+      case 0: return productName.trim() && mainPromise.trim();
       case 1: return painPoints.trim() && benefits.trim();
       case 2: return !!carouselObjective;
       default: return false;
