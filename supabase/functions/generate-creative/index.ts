@@ -14,89 +14,6 @@ const FORMAT_TO_RATIO: Record<string, string> = {
   "16:9": "16:9",
 };
 
-function base64url(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-async function getAccessToken(saJson: {
-  client_email: string;
-  private_key: string;
-  token_uri: string;
-}): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-
-  const header = base64url(
-    new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" }))
-  );
-
-  const payload = base64url(
-    new TextEncoder().encode(
-      JSON.stringify({
-        iss: saJson.client_email,
-        sub: saJson.client_email,
-        aud: saJson.token_uri,
-        scope: "https://www.googleapis.com/auth/cloud-platform",
-        iat: now,
-        exp: now + 3600,
-      })
-    )
-  );
-
-  // Import RSA private key
-  const pemBody = saJson.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\n/g, "");
-  const binaryKey = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    new TextEncoder().encode(`${header}.${payload}`)
-  );
-
-  const jwt = `${header}.${payload}.${base64url(signature)}`;
-
-  // Exchange JWT for access token
-  const tokenRes = await fetch(saJson.token_uri, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
-  });
-
-  if (!tokenRes.ok) {
-    const errText = await tokenRes.text();
-    throw new Error(`Token exchange failed (${tokenRes.status}): ${errText}`);
-  }
-
-  const tokenData = await tokenRes.json();
-  return tokenData.access_token;
-}
-
-async function imageUrlToBase64(url: string): Promise<{ mimeType: string; data: string }> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status} ${url}`);
-  const buf = await res.arrayBuffer();
-  const bytes = new Uint8Array(buf);
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  const base64 = btoa(binary);
-
-  const contentType = res.headers.get("content-type") || "image/png";
-  return { mimeType: contentType.split(";")[0], data: base64 };
-}
-
 function buildPrompt(data: {
   product_name: string;
   format: string;
@@ -200,14 +117,61 @@ function buildPrompt(data: {
   );
 }
 
+async function generateWithRetry(
+  falKey: string,
+  prompt: string,
+  imageUrls: string[],
+  aspectRatio: string,
+  index: number,
+  maxRetries = 3,
+): Promise<{ url: string }> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch("https://fal.run/fal-ai/nano-banana-pro/edit", {
+      method: "POST",
+      headers: {
+        Authorization: `Key ${falKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        image_urls: imageUrls,
+        aspect_ratio: aspectRatio,
+      }),
+    });
+
+    if (res.status === 429) {
+      if (attempt === maxRetries) {
+        throw new Error("Limite de requisições atingido. Tente novamente em alguns minutos.");
+      }
+      const wait = Math.pow(2, attempt + 1) * 1000;
+      console.log(`Rate limited (429) on image ${index}, waiting ${wait}ms...`);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`fal.ai error (${res.status}): ${errText.substring(0, 500)}`);
+    }
+
+    const result = await res.json();
+    const generatedUrl = result?.images?.[0]?.url;
+    if (!generatedUrl) {
+      throw new Error(`No image in fal.ai response for index ${index}: ${JSON.stringify(result).substring(0, 500)}`);
+    }
+
+    return { url: generatedUrl };
+  }
+  throw new Error("Max retries exceeded");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-    const saJson = JSON.parse(saJsonRaw);
+    const falKey = Deno.env.get("FAL_KEY");
+    if (!falKey) throw new Error("FAL_KEY not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -239,7 +203,7 @@ serve(async (req) => {
     const numImages = Math.min(Math.max(1, quantity || 1), 4);
     const aspectRatio = FORMAT_TO_RATIO[format] || "1:1";
 
-    const prompt = buildPrompt({
+    const promptJson = buildPrompt({
       product_name,
       format,
       promise,
@@ -254,101 +218,37 @@ serve(async (req) => {
       visual_option,
     });
 
-    // Get Google access token
-    console.log("Authenticating with Google service account...");
-    const accessToken = await getAccessToken(saJson);
-    console.log("Access token obtained successfully");
+    // Flatten JSON prompt to text for fal.ai
+    const prompt = promptJson;
 
-    // Convert reference images to base64
-    console.log("Converting", image_urls.length, "reference images to base64...");
-    const imagesParts = await Promise.all(
-      image_urls.map(async (url: string) => {
-        const img = await imageUrlToBase64(url);
-        return { inlineData: { mimeType: img.mimeType, data: img.data } };
-      })
-    );
+    // Generate images sequentially to avoid rate limits
+    console.log("Generating", numImages, "images via fal.ai nano-banana-pro...");
+    const generatedImages: { url: string }[] = [];
+    for (let i = 0; i < numImages; i++) {
+      console.log(`Generating image ${i + 1}/${numImages}...`);
+      const img = await generateWithRetry(falKey, prompt, image_urls, aspectRatio, i);
+      generatedImages.push(img);
+    }
 
-    // Build Vertex AI request
-    const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
-
-    const vertexPayload = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }, ...imagesParts],
-        },
-      ],
-      generationConfig: {
-        responseModalities: ["IMAGE"],
-        imageConfig: {
-          aspectRatio,
-        },
-      },
-    };
-
-    // Generate images in parallel (Gemini generates 1 per call)
-    console.log("Generating", numImages, "images via Vertex AI...");
-    const generateOne = async (index: number) => {
-      const res = await fetch(vertexEndpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(vertexPayload),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(
-          `Vertex AI error (${res.status}): ${errText.substring(0, 500)}`
-        );
-      }
-
-      const result = await res.json();
-
-      // Extract base64 image from response
-      const candidates = result.candidates || [];
-      for (const candidate of candidates) {
-        const parts = candidate.content?.parts || [];
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            return {
-              base64: part.inlineData.data,
-              mimeType: part.inlineData.mimeType || "image/png",
-            };
-          }
-        }
-      }
-      throw new Error(
-        `No image in Vertex AI response for index ${index}: ${JSON.stringify(result).substring(0, 500)}`
-      );
-    };
-
-    const generatedImages = await Promise.all(
-      Array.from({ length: numImages }, (_, i) => generateOne(i))
-    );
-
-    // Upload to Supabase Storage
+    // Download and re-upload to Supabase Storage
     console.log("Uploading", generatedImages.length, "images to storage...");
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const uploadedUrls = await Promise.all(
-      generatedImages.map(async (img, i) => {
-        const ext = img.mimeType.includes("jpeg") || img.mimeType.includes("jpg") ? "jpg" : "png";
-        const fileName = `${crypto.randomUUID()}.${ext}`;
+      generatedImages.map(async (img) => {
+        const imgRes = await fetch(img.url);
+        if (!imgRes.ok) throw new Error(`Failed to download generated image: ${imgRes.status}`);
+        const arrayBuf = await imgRes.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
 
-        // Decode base64 to Uint8Array
-        const binaryStr = atob(img.base64);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let j = 0; j < binaryStr.length; j++) {
-          bytes[j] = binaryStr.charCodeAt(j);
-        }
+        const contentType = imgRes.headers.get("content-type") || "image/png";
+        const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "png";
+        const fileName = `${crypto.randomUUID()}.${ext}`;
 
         const { error } = await supabaseAdmin.storage
           .from("generated-creatives")
           .upload(fileName, bytes, {
-            contentType: img.mimeType,
+            contentType,
             upsert: false,
           });
 
