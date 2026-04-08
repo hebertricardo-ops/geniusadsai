@@ -164,8 +164,10 @@ serve(async (req) => {
       return await handleCopyPhase(body);
     } else if (phase === "images") {
       return await handleImagesPhase(body);
+    } else if (phase === "single-image") {
+      return await handleSingleImagePhase(body);
     } else {
-      throw new Error("Invalid phase. Must be 'copy' or 'images'.");
+      throw new Error("Invalid phase. Must be 'copy', 'images', or 'single-image'.");
     }
   } catch (e) {
     console.error("generate-carousel error:", e);
@@ -449,5 +451,145 @@ async function handleImagesPhase(body: any) {
       failed_count: failedCount,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// PHASE 3: Generate a SINGLE slide image (no batch)
+// ═══════════════════════════════════════════════════════
+async function handleSingleImagePhase(body: any) {
+  const saJsonRaw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!saJsonRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+  const saJson = JSON.parse(saJsonRaw);
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  const { slide, image_urls, product_name, creative_style, total_slides, carousel_style_reference } = body;
+  if (!slide || !slide.headline) throw new Error("Missing slide data");
+
+  console.log(`Single-image: Generating slide ${slide.slide_number}/${total_slides || "?"} - ${slide.slide_role}`);
+
+  const accessToken = await getAccessToken(saJson);
+
+  let imagesParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+  if (image_urls?.length) {
+    console.log("Converting", image_urls.length, "reference images to base64...");
+    imagesParts = await Promise.all(
+      image_urls.map(async (url: string) => {
+        const img = await imageUrlToBase64(url);
+        return { inlineData: { mimeType: img.mimeType, data: img.data } };
+      })
+    );
+  }
+
+  const vertexEndpoint = `https://aiplatform.googleapis.com/v1/projects/${saJson.project_id}/locations/global/publishers/google/models/gemini-3-pro-image-preview:generateContent`;
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  const styleRef = carousel_style_reference || creative_style || "clean premium tecnológico";
+
+  const slidePrompt = JSON.stringify({
+    tipo: "slide_de_carrossel_publicitario",
+    formato: "1:1",
+    idioma_textos: "português do Brasil",
+    slide_info: {
+      numero: slide.slide_number,
+      funcao: slide.slide_role,
+      headline: slide.headline,
+      subtexto: slide.subtext,
+      cta: slide.cta || null,
+    },
+    produto: product_name,
+    estilo_global_do_carrossel: {
+      estilo: styleRef,
+      instrucao: "Este slide faz parte de um carrossel. Mantenha a mesma paleta de cores, estilo de fundo, tipografia visual e elementos decorativos consistentes com os demais slides do carrossel.",
+      total_slides: total_slides || 1,
+    },
+    instrucoes: [
+      "criar um slide visualmente impactante para carrossel de anúncio",
+      "usar as imagens de referência como base visual quando fornecidas",
+      "NÃO renderizar texto na imagem — apenas compor o visual/layout",
+      "manter design clean, premium e profissional",
+      "garantir que o slide funcione bem em sequência com os demais",
+      "criar background elaborado com elementos visuais contextuais",
+      "incluir efeitos tecnológicos: linhas geométricas, gradientes sutis, overlays",
+      `este é o slide ${slide.slide_number} de ${total_slides || "?"} — função: ${slide.slide_role}`,
+      "IMPORTANTE: manter consistência visual com os outros slides do carrossel (mesma paleta, mesmo estilo de fundo, mesmos elementos decorativos)",
+      slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
+      slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
+    ].filter(Boolean),
+  }, null, 2);
+
+  const vertexPayload = {
+    contents: [{ role: "user", parts: [{ text: slidePrompt }, ...imagesParts] }],
+    generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "1:1" } },
+  };
+
+  // Retry logic for single image
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = Math.min(10000 * Math.pow(2, attempt - 1), 60000);
+        console.log(`Retry ${attempt} for slide ${slide.slide_number}, waiting ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+
+      const startTime = Date.now();
+      const res = await fetch(vertexEndpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(vertexPayload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Vertex AI error (${res.status}): ${errText.substring(0, 500)}`);
+      }
+
+      const result = await res.json();
+      let imageData: { base64: string; mimeType: string } | null = null;
+      for (const candidate of (result.candidates || [])) {
+        for (const part of (candidate.content?.parts || [])) {
+          if (part.inlineData?.data) {
+            imageData = { base64: part.inlineData.data, mimeType: part.inlineData.mimeType || "image/png" };
+            break;
+          }
+        }
+        if (imageData) break;
+      }
+
+      if (!imageData) throw new Error("No image in Vertex AI response");
+
+      // Upload to storage
+      const ext = imageData.mimeType.includes("jpeg") || imageData.mimeType.includes("jpg") ? "jpg" : "png";
+      const fileName = `carousel-${crypto.randomUUID()}.${ext}`;
+      const binaryStr = atob(imageData.base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
+
+      const { error: uploadErr } = await supabaseAdmin.storage
+        .from("generated-creatives")
+        .upload(fileName, bytes, { contentType: imageData.mimeType, upsert: false });
+      if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+
+      const { data: urlData } = supabaseAdmin.storage.from("generated-creatives").getPublicUrl(fileName);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`Slide ${slide.slide_number} generated and uploaded in ${elapsed}s`);
+
+      return new Response(
+        JSON.stringify({ image_url: urlData.publicUrl, slide_number: slide.slide_number }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+      console.error(`Slide ${slide.slide_number} attempt ${attempt + 1} failed:`, lastError);
+      if (!lastError.includes("429") && !lastError.includes("RESOURCE_EXHAUSTED")) break;
+    }
+  }
+
+  return new Response(
+    JSON.stringify({ error: `Falha ao gerar slide ${slide.slide_number}: ${lastError}` }),
+    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import Stepper from "@/components/Stepper";
 import ImageUpload from "@/components/ImageUpload";
 import CreditsBadge from "@/components/CreditsBadge";
-import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RefreshCw, ImageIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Loader2, Check, RefreshCw, ImageIcon, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +44,12 @@ interface CarouselCopy {
   slides: CarouselSlide[];
 }
 
+interface SlideState {
+  loading: boolean;
+  imageUrl: string | null;
+  extraImages: File[];
+}
+
 const ROLE_COLORS: Record<string, string> = {
   gancho: "bg-red-500/10 text-red-400 border-red-500/20",
   dor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
@@ -71,7 +77,9 @@ const CreateCarousel = () => {
   // Phase states
   const [loadingCopy, setLoadingCopy] = useState(false);
   const [generatedCopy, setGeneratedCopy] = useState<CarouselCopy | null>(null);
-  const [loadingImages, setLoadingImages] = useState(false);
+  const [slideStates, setSlideStates] = useState<SlideState[]>([]);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -108,28 +116,12 @@ const CreateCarousel = () => {
         },
       });
       if (error) throw error;
-      setGeneratedCopy(data.copy);
-      toast({ title: "Copy gerada!", description: "Revise os slides e confirme para gerar as imagens." });
-    } catch (err: any) {
-      console.error(err);
-      toast({ title: "Erro ao gerar copy", description: err.message || "Tente novamente.", variant: "destructive" });
-    } finally {
-      setLoadingCopy(false);
-    }
-  };
 
-  // Phase 2: Generate images from approved copy
-  const handleGenerateImages = async () => {
-    if (!user || !generatedCopy) return;
-    const cost = generatedCopy.slides.length;
-    if ((credits?.credits_balance ?? 0) < cost) {
-      toast({ title: "Créditos insuficientes", description: `Você precisa de ${cost} créditos para gerar ${cost} slides.`, variant: "destructive" });
-      return;
-    }
+      const copy: CarouselCopy = data.copy;
+      setGeneratedCopy(copy);
+      setSlideStates(copy.slides.map(() => ({ loading: false, imageUrl: null, extraImages: [] })));
 
-    setLoadingImages(true);
-    try {
-      // 1. Upload reference images
+      // Upload reference images once
       const imageUrls: string[] = [];
       for (const file of images) {
         const path = `${user.id}/${Date.now()}-${file.name}`;
@@ -137,12 +129,13 @@ const CreateCarousel = () => {
         if (upErr) throw upErr;
         const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
           .from("creative-uploads")
-          .createSignedUrl(path, 600);
+          .createSignedUrl(path, 3600);
         if (signedUrlErr || !signedUrlData?.signedUrl) throw new Error("Failed to create signed URL");
         imageUrls.push(signedUrlData.signedUrl);
       }
+      setUploadedImageUrls(imageUrls);
 
-      // 2. Create carousel request record
+      // Save to history immediately as copy_ready
       const { data: request, error: reqError } = await supabase
         .from("carousel_requests")
         .insert({
@@ -155,110 +148,149 @@ const CreateCarousel = () => {
           carousel_objective: carouselObjective,
           creative_style: creativeStyle || null,
           extra_context: extraContext || null,
-          slides_count: generatedCopy.slides.length,
-          status: "processing",
-          result_data: generatedCopy as any,
+          slides_count: copy.slides.length,
+          status: "copy_ready",
+          result_data: copy as any,
         })
         .select()
         .single();
       if (reqError) throw reqError;
+      setRequestId(request.id);
 
-      // 3. Call generate-carousel phase 2
-      const { data: imagesData, error: imagesError } = await supabase.functions.invoke("generate-carousel", {
+      toast({ title: "Copy gerada!", description: "Agora gere as imagens de cada slide individualmente." });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Erro ao gerar copy", description: err.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setLoadingCopy(false);
+    }
+  };
+
+  // Generate single slide image
+  const handleGenerateSlideImage = async (slideIndex: number) => {
+    if (!user || !generatedCopy || !requestId) return;
+
+    if ((credits?.credits_balance ?? 0) < 1) {
+      toast({ title: "Créditos insuficientes", description: "Você precisa de 1 crédito para gerar este slide.", variant: "destructive" });
+      return;
+    }
+
+    // Set loading for this slide
+    setSlideStates(prev => prev.map((s, i) => i === slideIndex ? { ...s, loading: true } : s));
+
+    try {
+      const slide = generatedCopy.slides[slideIndex];
+      const slideState = slideStates[slideIndex];
+
+      // Upload extra images for this slide
+      const extraImageUrls: string[] = [];
+      for (const file of slideState.extraImages) {
+        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
+          .from("creative-uploads")
+          .createSignedUrl(path, 3600);
+        if (signedUrlErr || !signedUrlData?.signedUrl) throw new Error("Failed to create signed URL");
+        extraImageUrls.push(signedUrlData.signedUrl);
+      }
+
+      // Combine reference + extra images
+      const allImageUrls = [...uploadedImageUrls, ...extraImageUrls];
+
+      const { data, error } = await supabase.functions.invoke("generate-carousel", {
         body: {
-          phase: "images",
-          image_urls: imageUrls,
-          copy: generatedCopy,
+          phase: "single-image",
+          slide,
+          image_urls: allImageUrls,
           product_name: productName,
           creative_style: creativeStyle || null,
-          slides_count: generatedCopy.slides.length,
+          total_slides: generatedCopy.slides.length,
+          carousel_style_reference: creativeStyle || "clean premium tecnológico",
         },
       });
-      if (imagesError) throw imagesError;
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
-      // Check for fallback (complete failure)
-      if (imagesData?.fallback) {
-        await supabase.from("carousel_requests").update({ status: "failed" }).eq("id", request.id);
-        toast({ title: "Erro na geração de imagens", description: imagesData.error || "Tente novamente em alguns minutos.", variant: "destructive" });
-        return;
-      }
+      const imageUrl = data.image_url;
 
-      const generatedSlides = imagesData?.slides || [];
-      if (generatedSlides.length === 0) {
-        await supabase.from("carousel_requests").update({ status: "failed" }).eq("id", request.id);
-        toast({ title: "Nenhuma imagem gerada", description: "Tente novamente em alguns minutos.", variant: "destructive" });
-        return;
-      }
+      // Save to generated_creatives
+      await supabase.from("generated_creatives").insert({
+        user_id: user.id,
+        image_url: imageUrl,
+        request_id: requestId,
+        copy_data: {
+          type: "carousel",
+          slide_number: slide.slide_number,
+          ...slide,
+        },
+        credits_used: 1,
+      });
 
-      // 4. Update request status
-      const finalStatus = imagesData?.partial ? "partial" : "completed";
-      await supabase.from("carousel_requests").update({ status: finalStatus }).eq("id", request.id);
-
-      // 5. Save generated images
-      for (const slide of generatedSlides) {
-        await supabase.from("generated_creatives").insert({
-          user_id: user.id,
-          image_url: slide.image_url,
-          request_id: request.id,
-          copy_data: {
-            type: "carousel",
-            slide_number: slide.slide_number,
-            ...generatedCopy.slides.find((s) => s.slide_number === slide.slide_number),
-          },
-          credits_used: 1,
-        });
-      }
-
-      // 6. Deduct credits (only for successful slides)
-      const actualCost = generatedSlides.length;
+      // Deduct 1 credit
       await supabase
         .from("user_credits")
         .update({
-          credits_balance: (credits?.credits_balance ?? 0) - actualCost,
-          credits_used: (credits?.credits_used ?? 0) + actualCost,
+          credits_balance: (credits?.credits_balance ?? 0) - 1,
+          credits_used: (credits?.credits_used ?? 0) + 1,
         })
         .eq("user_id", user.id);
 
       await supabase.from("credit_transactions").insert({
         user_id: user.id,
         type: "usage",
-        amount: -actualCost,
-        description: `Carrossel gerado: ${productName} (${actualCost} slides)`,
+        amount: -1,
+        description: `Slide ${slide.slide_number} do carrossel: ${productName}`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["credits"] });
-      queryClient.invalidateQueries({ queryKey: ["creative-requests"] });
 
-      if (imagesData?.partial) {
-        toast({ title: "Carrossel parcialmente gerado", description: `${generatedSlides.length} de ${cost} slides criados. Alguns falharam por limite de quota.` });
-      } else {
-        toast({ title: "Carrossel gerado!", description: `${actualCost} slides criados com sucesso.` });
+      // Update slide state
+      setSlideStates(prev => prev.map((s, i) => i === slideIndex ? { ...s, loading: false, imageUrl } : s));
+
+      // Check if all slides are done → update request status
+      const updatedStates = slideStates.map((s, i) => i === slideIndex ? { ...s, imageUrl } : s);
+      const allDone = updatedStates.every(s => s.imageUrl !== null);
+      if (allDone) {
+        await supabase.from("carousel_requests").update({ status: "completed" }).eq("id", requestId);
       }
-      navigate(`/carousel-results/${request.id}`);
+
+      toast({ title: `Slide ${slide.slide_number} gerado!`, description: "Imagem criada com sucesso." });
     } catch (err: any) {
       console.error(err);
-      toast({ title: "Erro ao gerar imagens", description: err.message || "Tente novamente.", variant: "destructive" });
-    } finally {
-      setLoadingImages(false);
+      setSlideStates(prev => prev.map((s, i) => i === slideIndex ? { ...s, loading: false } : s));
+      toast({ title: `Erro no slide ${slideIndex + 1}`, description: err.message || "Tente novamente.", variant: "destructive" });
     }
   };
 
-  // Copy review UI
-  if (generatedCopy && !loadingImages) {
+  const handleSlideExtraImages = (slideIndex: number, files: File[]) => {
+    setSlideStates(prev => prev.map((s, i) => i === slideIndex ? { ...s, extraImages: files } : s));
+  };
+
+  const generatedCount = slideStates.filter(s => s.imageUrl).length;
+  const allSlidesGenerated = generatedCopy && generatedCount === generatedCopy.slides.length;
+
+  // Copy review + individual image generation UI
+  if (generatedCopy) {
     return (
       <div>
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-display text-foreground mb-2">Revise a Copy do Carrossel</h2>
+            <h2 className="text-2xl font-display text-foreground mb-2">Slides do Carrossel</h2>
             <p className="text-muted-foreground">
-              {generatedCopy.slides.length} slides para "{productName}" — confirme para gerar as imagens
+              {generatedCopy.slides.length} slides para "{productName}" — gere as imagens individualmente
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {generatedCount}/{generatedCopy.slides.length} imagens geradas • 1 crédito por slide
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {generatedCopy.slides.map((slide, idx) => {
               const roleKey = slide.slide_role.toLowerCase();
               const colorClass = ROLE_COLORS[roleKey] || "bg-muted text-muted-foreground border-border";
+              const state = slideStates[idx];
+
               return (
                 <div
                   key={idx}
@@ -268,11 +300,16 @@ const CreateCarousel = () => {
                     <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-display text-sm shrink-0">
                       {slide.slide_number}
                     </div>
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className={colorClass}>
                           {slide.slide_role}
                         </Badge>
+                        {state?.imageUrl && (
+                          <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20">
+                            <Check className="w-3 h-3 mr-1" /> Gerado
+                          </Badge>
+                        )}
                       </div>
                       <h3 className="text-lg font-display text-foreground">{slide.headline}</h3>
                       <p className="text-sm text-muted-foreground">{slide.subtext}</p>
@@ -281,9 +318,67 @@ const CreateCarousel = () => {
                           {slide.cta}
                         </span>
                       )}
-                      <p className="text-xs text-foreground/50 italic mt-2">
+                      <p className="text-xs text-foreground/50 italic">
                         Estratégia: {slide.strategy}
                       </p>
+
+                      {/* Generated image preview */}
+                      {state?.imageUrl && (
+                        <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-xs">
+                          <img
+                            src={state.imageUrl}
+                            alt={`Slide ${slide.slide_number}`}
+                            className="w-full aspect-square object-cover"
+                          />
+                        </div>
+                      )}
+
+                      {/* Extra images upload + generate button */}
+                      {!state?.imageUrl && (
+                        <div className="mt-4 space-y-3 pt-3 border-t border-border">
+                          <div>
+                            <Label className="text-sm text-muted-foreground mb-2 block">
+                              <Upload className="w-3 h-3 inline mr-1" />
+                              Imagens extras para este slide (opcional)
+                            </Label>
+                            <ImageUpload
+                              images={state?.extraImages || []}
+                              onImagesChange={(files) => handleSlideExtraImages(idx, files)}
+                              maxImages={4}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 mt-3">
+                        {state?.loading ? (
+                          <Button variant="outline" disabled>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Gerando...
+                          </Button>
+                        ) : state?.imageUrl ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSlideStates(prev => prev.map((s, i) => i === idx ? { ...s, imageUrl: null } : s));
+                            }}
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            Regenerar (1 crédito)
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="hero"
+                            size="sm"
+                            onClick={() => handleGenerateSlideImage(idx)}
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            Gerar Imagem (1 crédito)
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -296,37 +391,24 @@ const CreateCarousel = () => {
               variant="outline"
               onClick={() => {
                 setGeneratedCopy(null);
+                setSlideStates([]);
+                setRequestId(null);
               }}
             >
               <RefreshCw className="w-4 h-4" />
               Regenerar Copy
             </Button>
-            <Button variant="hero" onClick={handleGenerateImages}>
-              <ImageIcon className="w-4 h-4" />
-              Gerar Imagens ({generatedCopy.slides.length} créditos)
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Loading images UI
-  if (loadingImages) {
-    return (
-      <div>
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-            <div className="relative mb-6">
-              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-glow animate-pulse">
-                <Sparkles className="w-10 h-10 text-primary-foreground" />
-              </div>
-            </div>
-            <h2 className="text-xl font-display text-foreground mb-2">Gerando as imagens do carrossel...</h2>
-            <p className="text-muted-foreground text-center max-w-md">
-              Estamos criando {generatedCopy?.slides.length || slidesCount} imagens para seus slides. Isso pode levar alguns minutos.
-            </p>
-            <Loader2 className="w-6 h-6 text-primary animate-spin mt-6" />
+            {allSlidesGenerated && (
+              <Button variant="hero" onClick={() => navigate(`/carousel-results/${requestId}`)}>
+                <Check className="w-4 h-4" />
+                Ver Carrossel Completo
+              </Button>
+            )}
+            {generatedCount > 0 && !allSlidesGenerated && (
+              <Button variant="outline" onClick={() => navigate(`/carousel-results/${requestId}`)}>
+                Ver Progresso
+              </Button>
+            )}
           </div>
         </div>
       </div>
