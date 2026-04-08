@@ -147,6 +147,7 @@ const CreateCarousel = () => {
         image_urls: imageUrls,
         product_name: productName,
         carousel_style_reference: creativeStyle || "clean premium tecnológico",
+        typography_style: "sans-serif geométrica (Montserrat ou similar)",
       };
 
       // Save to history immediately as copy_ready

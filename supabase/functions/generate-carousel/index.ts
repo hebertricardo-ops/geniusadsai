@@ -332,8 +332,21 @@ async function handleImagesPhase(body: any) {
         texto_subtexto: slide.subtext,
         texto_cta: slide.cta || null,
       },
+      tipografia: {
+        regra_principal: "TODOS os slides do carrossel DEVEM usar EXATAMENTE a mesma fonte/estilo tipográfico. Consistência tipográfica é OBRIGATÓRIA.",
+        headline: "sans-serif geométrica bold (estilo Montserrat Bold ou similar). Todas as headlines devem usar a MESMA fonte em TODOS os slides.",
+        subtexto: "sans-serif regular/light (estilo Montserrat Regular ou similar). Todos os subtextos devem usar a MESMA fonte em TODOS os slides.",
+        cta: "mesma família tipográfica do headline, em bold ou semibold",
+        proibicoes: [
+          "PROIBIDO usar fontes serifadas em qualquer slide",
+          "PROIBIDO variar o estilo tipográfico entre slides",
+          "PROIBIDO usar fontes manuscritas, cursivas ou decorativas",
+          "PROIBIDO misturar famílias tipográficas diferentes entre slides"
+        ]
+      },
       instrucoes_de_composicao: [
         "OBRIGATÓRIO: renderizar os textos fornecidos (headline, subtexto, cta) diretamente na imagem do slide, em português do Brasil, com tipografia legível e bem posicionada",
+        "TIPOGRAFIA: usar EXATAMENTE a mesma fonte sans-serif geométrica bold para headlines e sans-serif regular para subtextos em TODOS os slides. NÃO variar a font-family entre slides.",
         "o headline deve ter destaque visual (maior, bold, contraste alto)",
         "o subtexto deve aparecer menor, abaixo do headline",
         "se houver CTA, renderizar como botão ou destaque visual no slide",
@@ -503,6 +516,8 @@ async function handleSingleImagePhase(body: any) {
 
   const styleRef = carousel_style_reference || creative_style || "clean premium tecnológico";
 
+  const typographyStyle = body.typography_style || "sans-serif geométrica (Montserrat ou similar)";
+
   const slidePrompt = JSON.stringify({
     tipo: "slide_de_carrossel_publicitario",
     formato: "1:1",
@@ -520,8 +535,22 @@ async function handleSingleImagePhase(body: any) {
       texto_subtexto: slide.subtext,
       texto_cta: slide.cta || null,
     },
+    tipografia: {
+      regra_principal: "TODOS os slides do carrossel DEVEM usar EXATAMENTE a mesma fonte/estilo tipográfico. Consistência tipográfica é OBRIGATÓRIA.",
+      estilo_definido: typographyStyle,
+      headline: "sans-serif geométrica bold (estilo Montserrat Bold ou similar). Todas as headlines devem usar a MESMA fonte em TODOS os slides.",
+      subtexto: "sans-serif regular/light (estilo Montserrat Regular ou similar). Todos os subtextos devem usar a MESMA fonte em TODOS os slides.",
+      cta: "mesma família tipográfica do headline, em bold ou semibold",
+      proibicoes: [
+        "PROIBIDO usar fontes serifadas em qualquer slide",
+        "PROIBIDO variar o estilo tipográfico entre slides",
+        "PROIBIDO usar fontes manuscritas, cursivas ou decorativas",
+        "PROIBIDO misturar famílias tipográficas diferentes entre slides"
+      ]
+    },
     instrucoes_de_composicao: [
       "OBRIGATÓRIO: renderizar os textos fornecidos (headline, subtexto, cta) diretamente na imagem do slide, em português do Brasil, com tipografia legível e bem posicionada",
+      "TIPOGRAFIA: usar EXATAMENTE a mesma fonte sans-serif geométrica bold para headlines e sans-serif regular para subtextos em TODOS os slides. NÃO variar a font-family entre slides.",
       "o headline deve ter destaque visual (maior, bold, contraste alto)",
       "o subtexto deve aparecer menor, abaixo do headline",
       "se houver CTA, renderizar como botão ou destaque visual no slide",
@@ -535,7 +564,7 @@ async function handleSingleImagePhase(body: any) {
       `este é o slide ${slide.slide_number} de ${total_slides || "?"} — função: ${slide.slide_role}`,
       "PROIBIDO: NÃO incluir numeração de slide na imagem (ex: 1/6, 2/8, slide 3 de 5, etc). A imagem não deve conter nenhum indicador numérico de posição ou sequência.",
       "IMPORTANTE: manter consistência visual com os outros slides do carrossel (mesma paleta, mesmo estilo de fundo, mesmos elementos decorativos)",
-      existing_slide_urls?.length ? "REFERÊNCIA DE ESTILO: as imagens de referência incluem slides já gerados deste carrossel. Mantenha EXATAMENTE a mesma paleta de cores, estilo tipográfico, elementos decorativos e composição visual." : "",
+      existing_slide_urls?.length ? "REFERÊNCIA DE ESTILO: as imagens de referência incluem slides já gerados deste carrossel. COPIAR EXATAMENTE a mesma tipografia (font-family, peso, tamanho relativo), paleta de cores, elementos decorativos e composição visual. A fonte deve ser idêntica." : "",
       slide.slide_role === "gancho" ? "visual chamativo e impactante para prender atenção" : "",
       slide.slide_role === "cta" ? "visual de fechamento com destaque para call-to-action" : "",
       use_ai_image ? `GERAÇÃO DE IMAGEM COM IA: crie elementos visuais, ilustrações e cenários que representem o conceito do slide. Contexto do produto: ${product_name}. Função do slide: ${slide.slide_role}. Use criatividade para gerar visuais que complementem os textos e reforcem a mensagem.` : "",
