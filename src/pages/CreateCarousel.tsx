@@ -429,7 +429,6 @@ const CreateCarousel = () => {
                             <GenerationProgress isActive={true} type="carousel-slide" />
                           </div>
                         ) : state?.imageUrl ? (
-                        ) : state?.imageUrl ? (
                           <Button
                             variant="outline"
                             size="sm"
