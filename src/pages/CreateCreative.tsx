@@ -14,6 +14,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import InsufficientCreditsDialog from "@/components/InsufficientCreditsDialog";
+import GenerationProgress from "@/components/GenerationProgress";
 
 const STEPS = ["Imagens", "Produto", "Persuasão", "CTA"];
 
@@ -410,6 +411,9 @@ const CreateCreative = () => {
               </div>
             )}
 
+            {/* Generation progress overlay */}
+            <GenerationProgress isActive={generatingCreative} type="creative" />
+
             {/* Actions */}
             <div className="flex gap-4 justify-center pt-4">
               <Button variant="outline" onClick={() => { setGeneratedAngles(null); setStep(0); setImages([]); }}>
@@ -420,7 +424,7 @@ const CreateCreative = () => {
                 onClick={handleGenerateCreative}
                 disabled={selectedAngle === null || selectedVisual === null || generatingCreative}
               >
-                {generatingCreative ? "Gerando..." : <><Sparkles className="w-4 h-4" /> Gerar Criativo</>}
+                {generatingCreative ? "Gerando criativo..." : <><Sparkles className="w-4 h-4" /> Gerar Criativo</>}
               </Button>
             </div>
           </div>
@@ -579,6 +583,8 @@ const CreateCreative = () => {
                 </div>
               )}
 
+              <GenerationProgress isActive={loading} type="copy" />
+
               <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
                 <Button variant="ghost" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
                   <ArrowLeft className="w-4 h-4" /> Voltar
@@ -589,7 +595,7 @@ const CreateCreative = () => {
                   </Button>
                 ) : (
                   <Button variant="hero" onClick={handleGenerate} disabled={loading}>
-                    {loading ? "Gerando..." : <><Sparkles className="w-4 h-4" /> Gerar variações de copy</>}
+                    {loading ? "Gerando copy..." : <><Sparkles className="w-4 h-4" /> Gerar variações de copy</>}
                   </Button>
                 )}
               </div>
