@@ -268,7 +268,7 @@ const History = () => {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedCreative} onOpenChange={(open) => !open && setSelectedCreative(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
           {selectedCreative && (() => {
             const info = getRequestInfo(selectedCreative);
             return (
