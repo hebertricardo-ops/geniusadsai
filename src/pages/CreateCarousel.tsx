@@ -17,6 +17,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import InsufficientCreditsDialog from "@/components/InsufficientCreditsDialog";
+import GenerationProgress from "@/components/GenerationProgress";
 
 const STEPS = ["Produto", "Persuasão", "Estratégia"];
 
@@ -424,10 +425,9 @@ const CreateCarousel = () => {
                       {/* Action buttons */}
                       <div className="flex gap-2 mt-3">
                         {state?.loading ? (
-                          <Button variant="outline" disabled>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Gerando...
-                          </Button>
+                          <div className="w-full">
+                            <GenerationProgress isActive={true} type="carousel-slide" />
+                          </div>
                         ) : state?.imageUrl ? (
                           <Button
                             variant="outline"
@@ -506,20 +506,8 @@ const CreateCarousel = () => {
           <Stepper steps={STEPS} currentStep={step} />
         </div>
 
-        {loadingCopy ? (
-          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-            <div className="relative mb-6">
-              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-glow animate-pulse">
-                <Sparkles className="w-10 h-10 text-primary-foreground" />
-              </div>
-            </div>
-            <h2 className="text-xl font-display text-foreground mb-2">Gerando a copy do carrossel...</h2>
-            <p className="text-muted-foreground text-center max-w-md">
-              Estamos criando os textos para {slidesCount} slides. Isso leva apenas alguns segundos.
-            </p>
-            <Loader2 className="w-6 h-6 text-primary animate-spin mt-6" />
-          </div>
-        ) : (
+          <GenerationProgress isActive={loadingCopy} type="copy" />
+        {!loadingCopy && (
           <div className="gradient-card rounded-2xl p-8 border border-border shadow-card animate-fade-in">
             {/* Step 0: Produto */}
             {step === 0 && (
