@@ -6,53 +6,53 @@
 
 @layer base {
   :root {
-    --background: 222 40% 11%;
-    --foreground: 210 40% 98%;
+    --background: 30 20% 96%;
+    --foreground: 222 30% 18%;
 
-    --card: 217 33% 15%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 18%;
 
-    --popover: 217 33% 15%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 18%;
 
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 20%;
-    --secondary-foreground: 210 40% 90%;
+    --secondary: 30 15% 90%;
+    --secondary-foreground: 222 30% 25%;
 
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 30 15% 92%;
+    --muted-foreground: 220 10% 45%;
 
     --accent: 24 95% 53%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 22%;
-    --input: 217 33% 22%;
+    --border: 30 15% 85%;
+    --input: 30 15% 85%;
     --ring: 24 95% 53%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 222 47% 9%;
-    --sidebar-foreground: 210 40% 90%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 30% 25%;
     --sidebar-primary: 24 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 15%;
-    --sidebar-accent-foreground: 210 40% 90%;
-    --sidebar-border: 217 33% 18%;
+    --sidebar-accent: 30 20% 94%;
+    --sidebar-accent-foreground: 222 30% 25%;
+    --sidebar-border: 30 15% 88%;
     --sidebar-ring: 24 95% 53%;
 
     --font-display: 'Changa One', sans-serif;
     --font-body: 'Poppins', sans-serif;
 
     --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%), hsl(30 100% 60%));
-    --gradient-card: linear-gradient(145deg, hsl(217 33% 17%), hsl(217 33% 13%));
-    --gradient-hero: linear-gradient(180deg, hsl(222 47% 7%) 0%, hsl(222 47% 4%) 100%);
-    --shadow-glow: 0 0 30px -5px hsl(24 95% 53% / 0.3);
-    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.4);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(30 20% 97%));
+    --gradient-hero: linear-gradient(180deg, hsl(30 20% 97%) 0%, hsl(30 20% 94%) 100%);
+    --shadow-glow: 0 0 30px -5px hsl(24 95% 53% / 0.25);
+    --shadow-card: 0 4px 24px -4px hsl(222 30% 18% / 0.08);
   }
 }
 
