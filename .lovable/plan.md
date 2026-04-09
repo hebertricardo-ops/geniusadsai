@@ -1,34 +1,45 @@
 
 
-## Plano: Campo WhatsApp no cadastro + webhook para Make.com
+## Plano: Barras de progresso animadas nos processos de geração
+
+### Problema
+Atualmente, durante os processos de geração (copy e imagens), o usuário vê apenas texto "Gerando..." ou um spinner pequeno, sem feedback claro de que o sistema está trabalhando. Isso pode parecer travamento.
 
 ### O que será feito
-1. Adicionar campo obrigatório "WhatsApp" (DDD + Número) no formulário de cadastro
-2. Salvar o número na tabela `profiles`
-3. Após cadastro bem-sucedido, enviar dados (nome, email, whatsapp) via webhook para o Make.com
+Criar um componente `GenerationProgress` reutilizável com barra de progresso animada, mensagens de status rotativas e indicação visual clara de atividade. Aplicar em todos os pontos de geração.
+
+### Pontos de geração identificados
+
+1. **CreateCreative — Geração de copy** (`loading = true`, ~10-20s)
+2. **CreateCreative — Geração de imagem** (`generatingCreative = true`, ~30-60s)
+3. **CreateCarousel — Geração de copy** (`loadingCopy = true`, ~10-20s)
+4. **CreateCarousel — Geração de slide individual** (`slideStates[idx].loading = true`, ~20-40s)
 
 ### Alterações
 
-**1. Migração de banco — adicionar coluna `whatsapp` na tabela `profiles`**
-- `ALTER TABLE profiles ADD COLUMN whatsapp text;`
+**1. Novo componente `src/components/GenerationProgress.tsx`**
+- Barra de progresso animada com progresso simulado (avança gradualmente até ~90%, completa ao finalizar)
+- Mensagens de status rotativas contextuais (ex: "Analisando seu produto...", "Criando composição visual...", "Finalizando criativo...")
+- Ícone de Sparkles animado com pulse
+- Tempo estimado restante
+- Props: `isActive`, `type` ("copy" | "creative" | "carousel-slide"), `onComplete?`
 
-**2. Atualizar trigger `handle_new_user`**
-- Salvar o campo `whatsapp` do `user_metadata` na coluna nova do profile
+**2. `src/pages/CreateCreative.tsx`**
+- Substituir "Gerando..." no botão de copy por overlay/seção com `GenerationProgress` tipo "copy"
+- Substituir "Gerando..." no botão de criativo por `GenerationProgress` tipo "creative" em tela cheia dentro do card
+- Desabilitar interações durante geração
 
-**3. Frontend — `src/pages/Auth.tsx`**
-- Adicionar campo "WhatsApp" com placeholder "(11) 99999-9999", visível apenas no cadastro
-- Máscara de formatação: `(DD) NNNNN-NNNN`
-- Campo obrigatório no modo cadastro
-- Validação: mínimo 10 dígitos numéricos
+**3. `src/pages/CreateCarousel.tsx`**
+- Ao gerar copy: exibir `GenerationProgress` tipo "copy" substituindo o formulário temporariamente
+- Ao gerar slide individual: exibir `GenerationProgress` tipo "carousel-slide" dentro do card do slide (substituindo o botão)
 
-**4. Hook de auth — `src/hooks/useAuth.tsx`**
-- Passar `whatsapp` no `user_metadata` do `signUp`
+### Detalhes técnicos
 
-**5. Webhook para Make.com após cadastro**
-- Após signup bem-sucedido (sem erro), disparar `fetch` POST para `https://hook.us2.make.com/1ifgxwj2g4o47qa1lbo3ab51vumvoydy`
-- Body: `{ name, email, whatsapp }`
-- Disparar de forma fire-and-forget (não bloqueia o fluxo do usuário)
+O progresso será simulado com `useEffect` + `setInterval`:
+- 0-60%: avanço rápido (primeiros 10s)
+- 60-85%: avanço lento (próximos 20s)  
+- 85-95%: muito lento (espera)
+- 95-100%: só quando a resposta chegar
 
-### Sem edge function necessária
-O webhook do Make.com é uma URL pública — pode ser chamado diretamente do frontend após o cadastro, sem necessidade de proxy via edge function.
+Mensagens rotativas a cada 4 segundos, específicas por tipo de geração.
 
