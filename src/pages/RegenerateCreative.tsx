@@ -423,6 +423,14 @@ const RegenerateCreative = () => {
             </div>
           </div>
 
+          <GenerationProgress
+            isActive={loading}
+            type="copy"
+            onTimeout={() => {
+              toast({ title: "Geração demorada", description: "A geração está demorando mais que o esperado.", variant: "destructive" });
+            }}
+          />
+
           {/* Generate button */}
           <div className="flex items-center justify-between pt-2">
             <CreditsBadge credits={credits?.credits_balance ?? 0} />
