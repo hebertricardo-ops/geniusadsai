@@ -165,6 +165,35 @@ async function generateWithRetry(
   throw new Error("Max retries exceeded");
 }
 
+async function updateRequestStatus(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  productName: string,
+  status: string,
+) {
+  try {
+    const { data } = await supabaseAdmin
+      .from("creative_requests")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("product_name", productName)
+      .eq("status", "processing")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data?.id) {
+      await supabaseAdmin
+        .from("creative_requests")
+        .update({ status })
+        .eq("id", data.id);
+      console.log(`Updated request ${data.id} status to '${status}'`);
+    }
+  } catch (e) {
+    console.error("Failed to update request status:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
@@ -175,6 +204,7 @@ serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("Missing authorization header");
@@ -200,6 +230,14 @@ serve(async (req) => {
     if (!product_name || !headline || !cta || !visual_option)
       throw new Error("Missing required fields");
 
+    // Extract user_id from JWT for status updates
+    let userId: string | null = null;
+    try {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      userId = user?.id || null;
+    } catch { /* ignore */ }
+
     const numImages = Math.min(Math.max(1, quantity || 1), 4);
     const aspectRatio = FORMAT_TO_RATIO[format] || "1:1";
 
@@ -218,10 +256,8 @@ serve(async (req) => {
       visual_option,
     });
 
-    // Flatten JSON prompt to text for fal.ai
     const prompt = promptJson;
 
-    // Generate images sequentially to avoid rate limits
     console.log("Generating", numImages, "images via fal.ai nano-banana-pro...");
     const generatedImages: { url: string }[] = [];
     for (let i = 0; i < numImages; i++) {
@@ -230,9 +266,7 @@ serve(async (req) => {
       generatedImages.push(img);
     }
 
-    // Download and re-upload to Supabase Storage
     console.log("Uploading", generatedImages.length, "images to storage...");
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const uploadedUrls = await Promise.all(
       generatedImages.map(async (img) => {
@@ -269,6 +303,34 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("generate-creative error:", e);
+
+    // Try to update request status to 'error'
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Find the most recent processing request and mark it as error
+      const { data: processingRequests } = await supabaseAdmin
+        .from("creative_requests")
+        .select("id")
+        .eq("status", "processing")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (processingRequests?.length) {
+        for (const req of processingRequests) {
+          await supabaseAdmin
+            .from("creative_requests")
+            .update({ status: "error" })
+            .eq("id", req.id);
+        }
+        console.log(`Marked ${processingRequests.length} processing requests as error`);
+      }
+    } catch (statusErr) {
+      console.error("Failed to update request status to error:", statusErr);
+    }
+
     return new Response(
       JSON.stringify({
         error: e instanceof Error ? e.message : "Unknown error",
