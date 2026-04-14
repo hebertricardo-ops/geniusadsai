@@ -587,6 +587,14 @@ const RegenerateCreative = () => {
             </div>
           )}
 
+          <GenerationProgress
+            isActive={generatingCreative}
+            type="creative"
+            onTimeout={() => {
+              toast({ title: "Geração demorada", description: "A geração do criativo está demorando mais que o esperado.", variant: "destructive" });
+            }}
+          />
+
           <div className="flex gap-4 justify-center pt-4">
             <Button variant="outline" onClick={() => setGeneratedAngles(null)}>
               Voltar ao Resumo
