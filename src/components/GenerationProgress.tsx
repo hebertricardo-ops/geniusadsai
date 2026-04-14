@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles } from "lucide-react";
+import { Sparkles, AlertTriangle } from "lucide-react";
 
 type GenerationType = "copy" | "creative" | "carousel-slide";
 
 interface GenerationProgressProps {
   isActive: boolean;
   type: GenerationType;
+  onTimeout?: () => void;
 }
 
 const MESSAGES: Record<GenerationType, string[]> = {
@@ -36,9 +37,16 @@ const MESSAGES: Record<GenerationType, string[]> = {
   ],
 };
 
-const GenerationProgress = ({ isActive, type }: GenerationProgressProps) => {
+const TIMEOUT_MS: Record<GenerationType, number> = {
+  copy: 120_000,       // 2 min
+  creative: 180_000,   // 3 min
+  "carousel-slide": 180_000,
+};
+
+const GenerationProgress = ({ isActive, type, onTimeout }: GenerationProgressProps) => {
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
 
   const messages = MESSAGES[type];
 
@@ -46,6 +54,7 @@ const GenerationProgress = ({ isActive, type }: GenerationProgressProps) => {
     if (!isActive) {
       setProgress(0);
       setMessageIndex(0);
+      setTimedOut(false);
       return;
     }
 
@@ -71,13 +80,29 @@ const GenerationProgress = ({ isActive, type }: GenerationProgressProps) => {
     return () => clearInterval(interval);
   }, [isActive, messages.length]);
 
+  // Timeout detection
+  useEffect(() => {
+    if (!isActive) return;
+
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+      onTimeout?.();
+    }, TIMEOUT_MS[type]);
+
+    return () => clearTimeout(timer);
+  }, [isActive, type, onTimeout]);
+
   if (!isActive) return null;
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 space-y-6 animate-fade-in">
       <div className="relative">
-        <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center shadow-glow animate-pulse">
-          <Sparkles className="w-8 h-8 text-primary-foreground" />
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-glow animate-pulse ${timedOut ? 'bg-destructive/20' : 'gradient-primary'}`}>
+          {timedOut ? (
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          ) : (
+            <Sparkles className="w-8 h-8 text-primary-foreground" />
+          )}
         </div>
       </div>
 
@@ -85,16 +110,20 @@ const GenerationProgress = ({ isActive, type }: GenerationProgressProps) => {
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{Math.round(progress)}%</span>
-          <span>Aguarde...</span>
+          <span>{timedOut ? "Tempo excedido" : "Aguarde..."}</span>
         </div>
       </div>
 
       <p className="text-sm text-foreground font-medium text-center transition-all duration-300">
-        {messages[messageIndex]}
+        {timedOut
+          ? "A geração está demorando mais que o esperado. Pode haver um erro no servidor."
+          : messages[messageIndex]}
       </p>
 
       <p className="text-xs text-muted-foreground text-center">
-        Não feche esta página enquanto o processo estiver em andamento
+        {timedOut
+          ? "Tente novamente ou aguarde mais um momento"
+          : "Não feche esta página enquanto o processo estiver em andamento"}
       </p>
     </div>
   );
