@@ -132,6 +132,20 @@ const CreateCreative = () => {
       toast({ title: "Copies geradas!", description: "Escolha seu ângulo e opção visual." });
     } catch (err: any) {
       console.error(err);
+      // Update request status to error if we have a request
+      try {
+        const { data: lastReq } = await supabase
+          .from("creative_requests")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "processing")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        if (lastReq?.id) {
+          await supabase.from("creative_requests").update({ status: "error" }).eq("id", lastReq.id);
+        }
+      } catch { /* ignore */ }
       toast({ title: "Erro ao gerar", description: err.message || "Tente novamente.", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -412,7 +426,13 @@ const CreateCreative = () => {
             )}
 
             {/* Generation progress overlay */}
-            <GenerationProgress isActive={generatingCreative} type="creative" />
+            <GenerationProgress
+              isActive={generatingCreative}
+              type="creative"
+              onTimeout={() => {
+                toast({ title: "Geração demorada", description: "O processo está demorando mais que o esperado. Se persistir, tente novamente.", variant: "destructive" });
+              }}
+            />
 
             {/* Actions */}
             <div className="flex gap-4 justify-center pt-4">
@@ -583,7 +603,13 @@ const CreateCreative = () => {
                 </div>
               )}
 
-              <GenerationProgress isActive={loading} type="copy" />
+              <GenerationProgress
+                isActive={loading}
+                type="copy"
+                onTimeout={() => {
+                  toast({ title: "Geração demorada", description: "A geração de copy está demorando mais que o esperado. Aguarde ou tente novamente.", variant: "destructive" });
+                }}
+              />
 
               <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
                 <Button variant="ghost" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
