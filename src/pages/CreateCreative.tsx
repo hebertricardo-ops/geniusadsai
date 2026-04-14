@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sanitizeFileName } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,7 +87,7 @@ const CreateCreative = () => {
       // 1. Upload images
       const imageUrls: string[] = [];
       for (const file of images) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (error) throw error;
         imageUrls.push(path);
@@ -167,7 +168,7 @@ const CreateCreative = () => {
       // 1. Get public URLs for uploaded images
       const imageUrls: string[] = [];
       for (const file of images) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (upErr) throw upErr;
         const { data: signedUrlData, error: signedUrlErr } = await supabase.storage

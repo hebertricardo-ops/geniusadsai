@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { sanitizeFileName } from "@/lib/utils";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ImageUpload from "@/components/ImageUpload";
@@ -93,7 +94,7 @@ const RegenerateCreative = () => {
     try {
       const imageUrls: string[] = [];
       for (const file of images) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (error) throw error;
         imageUrls.push(path);
@@ -184,7 +185,7 @@ const RegenerateCreative = () => {
     try {
       const imageUrls: string[] = [];
       for (const file of images) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (upErr) throw upErr;
         const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
