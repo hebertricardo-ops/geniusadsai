@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sanitizeFileName } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,7 +142,7 @@ const CreateCarousel = () => {
       // Upload reference images once
       const imageUrls: string[] = [];
       for (const file of images) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (upErr) throw upErr;
         const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
@@ -212,7 +213,7 @@ const CreateCarousel = () => {
       // Upload extra images for this slide
       const extraImageUrls: string[] = [];
       for (const file of slideState.extraImages) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (upErr) throw upErr;
         const { data: signedUrlData, error: signedUrlErr } = await supabase.storage

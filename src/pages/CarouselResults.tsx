@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { sanitizeFileName } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -97,7 +98,7 @@ const CarouselResults = () => {
       // Upload extra images if any
       const extraImageUrls: string[] = [];
       for (const file of state.extraImages) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const path = `${user.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: upErr } = await supabase.storage.from("creative-uploads").upload(path, file);
         if (upErr) throw upErr;
         const { data: signedUrlData, error: signedUrlErr } = await supabase.storage
