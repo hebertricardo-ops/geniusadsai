@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import ImageUpload from "@/components/ImageUpload";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import CreditsBadge from "@/components/CreditsBadge";
 import { Sparkles, Loader2, Check, Eye, Package, Target, ShieldAlert, MessageSquare, Zap } from "lucide-react";
+import GenerationProgress from "@/components/GenerationProgress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
@@ -150,6 +151,19 @@ const RegenerateCreative = () => {
       toast({ title: "Copies geradas!", description: "Escolha seu ângulo e opção visual." });
     } catch (err: any) {
       console.error(err);
+      try {
+        const { data: lastReq } = await supabase
+          .from("creative_requests")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "processing")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        if (lastReq?.id) {
+          await supabase.from("creative_requests").update({ status: "error" }).eq("id", lastReq.id);
+        }
+      } catch { /* ignore */ }
       toast({ title: "Erro ao gerar", description: err.message || "Tente novamente.", variant: "destructive" });
     } finally {
       setLoading(false);
