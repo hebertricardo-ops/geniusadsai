@@ -35,23 +35,22 @@ const Profile = () => {
 
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Sync from query
-  useState(() => {
-    if (profile) {
-      setName(profile.name ?? "");
-    }
-  });
+  // Sync from profile when it loads
+  if (profile && !initialized) {
+    setName(profile.name ?? "");
+    setAvatarUrl(profile.avatar_url ?? null);
+    setInitialized(true);
+  }
 
-  // Keep name in sync when profile loads
   const displayName = name || profile?.name || "";
   const displayEmail = profile?.email || user?.email || "";
   const initials = displayName
     ? displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : displayEmail.slice(0, 2).toUpperCase();
 
-  // Get avatar URL from user metadata or uploaded
-  const currentAvatar = avatarUrl || user?.user_metadata?.avatar_url || null;
+  const currentAvatar = avatarUrl || profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
