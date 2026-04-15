@@ -59,19 +59,30 @@ const Profile = () => {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `avatars/${user.id}/avatar.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("creative-uploads")
+        .from("generated-creatives")
         .upload(path, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from("creative-uploads")
+        .from("generated-creatives")
         .getPublicUrl(path);
 
-      setAvatarUrl(urlData.publicUrl);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      
+      // Save to profiles table
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast({ title: "Foto atualizada!", description: "Sua foto de perfil foi alterada." });
     } catch (err: any) {
       toast({ title: "Erro ao enviar foto", description: err.message, variant: "destructive" });
