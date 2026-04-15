@@ -35,23 +35,22 @@ const Profile = () => {
 
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Sync from query
-  useState(() => {
-    if (profile) {
-      setName(profile.name ?? "");
-    }
-  });
+  // Sync from profile when it loads
+  if (profile && !initialized) {
+    setName(profile.name ?? "");
+    setAvatarUrl(profile.avatar_url ?? null);
+    setInitialized(true);
+  }
 
-  // Keep name in sync when profile loads
   const displayName = name || profile?.name || "";
   const displayEmail = profile?.email || user?.email || "";
   const initials = displayName
     ? displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : displayEmail.slice(0, 2).toUpperCase();
 
-  // Get avatar URL from user metadata or uploaded
-  const currentAvatar = avatarUrl || user?.user_metadata?.avatar_url || null;
+  const currentAvatar = avatarUrl || profile?.avatar_url || user?.user_metadata?.avatar_url || null;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,19 +59,30 @@ const Profile = () => {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `avatars/${user.id}/avatar.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("creative-uploads")
+        .from("generated-creatives")
         .upload(path, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from("creative-uploads")
+        .from("generated-creatives")
         .getPublicUrl(path);
 
-      setAvatarUrl(urlData.publicUrl);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      
+      // Save to profiles table
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast({ title: "Foto atualizada!", description: "Sua foto de perfil foi alterada." });
     } catch (err: any) {
       toast({ title: "Erro ao enviar foto", description: err.message, variant: "destructive" });
