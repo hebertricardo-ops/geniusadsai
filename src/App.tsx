@@ -19,6 +19,7 @@ import RegenerateCreative from "./pages/RegenerateCreative";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import ChangePassword from "./pages/ChangePassword";
 import AddCredits from "./pages/AddCredits";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/regenerate" element={<ProtectedWithLayout><RegenerateCreative /></ProtectedWithLayout>} />
             <Route path="/add-credits" element={<ProtectedWithLayout><AddCredits /></ProtectedWithLayout>} />
             <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
