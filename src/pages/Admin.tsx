@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { EDGE_FUNCTION_CODES } from "@/data/edge-function-codes";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -190,23 +191,13 @@ export default function Admin() {
     }
   };
 
-  const copyFunctionCode = async (fnName: string) => {
-    setLoadingFnCode(fnName);
-    try {
-      const { data, error } = await supabase.functions.invoke("admin-dashboard", {
-        body: { action: "get_function_code", table_name: fnName },
-      });
-      if (error) throw error;
-      if (data?.code) {
-        navigator.clipboard.writeText(data.code);
-        toast({ title: "Código copiado!", description: `Código de ${fnName} copiado para a área de transferência.` });
-      } else {
-        toast({ title: "Erro", description: data?.error || "Código não encontrado", variant: "destructive" });
-      }
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    } finally {
-      setLoadingFnCode(null);
+  const copyFunctionCode = (fnName: string) => {
+    const code = EDGE_FUNCTION_CODES[fnName];
+    if (code) {
+      navigator.clipboard.writeText(code);
+      toast({ title: "Código copiado!", description: `Código de ${fnName} copiado para a área de transferência.` });
+    } else {
+      toast({ title: "Erro", description: "Código não encontrado para esta função", variant: "destructive" });
     }
   };
 
