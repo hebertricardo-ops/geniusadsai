@@ -49,6 +49,12 @@ const SECRETS_LIST = [
   "SUPABASE_SERVICE_ROLE_KEY", "WEBHOOK_SECRET", "LOVABLE_API_KEY", "OPENAI_API_KEY"
 ];
 
+const EDGE_FUNCTIONS = [
+  "admin-dashboard", "check-user-exists", "create-checkout", "create-user-webhook",
+  "delete-user-refund", "generate-carousel", "generate-copy", "generate-creative",
+  "handle-payment-success", "process-email-queue", "update-user-credit"
+];
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -60,6 +66,7 @@ export default function Admin() {
   const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
   const [showKeys, setShowKeys] = useState(false);
   const [storageFiles, setStorageFiles] = useState<Record<string, any[]>>({});
+  const [loadingFnCode, setLoadingFnCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchMetadata();
