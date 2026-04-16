@@ -31,7 +31,7 @@ interface ConnectionInfo {
   project_ref: string;
 }
 
-const ADMIN_EMAIL = ""; // Set to restrict access, empty = any authenticated user
+const ADMIN_EMAIL = "hebertricardo@gmail.com";
 
 const DB_FUNCTIONS = [
   { name: "enqueue_email", args: "queue_name text, payload jsonb", returns: "bigint" },
@@ -181,6 +181,7 @@ export default function Admin() {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  if (user.email !== ADMIN_EMAIL) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-background">

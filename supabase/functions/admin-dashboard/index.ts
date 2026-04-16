@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
     });
 
     const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+    if (userError || !user || user.email !== "hebertricardo@gmail.com") {
+      return new Response(JSON.stringify({ error: "Unauthorized - Admin only" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
