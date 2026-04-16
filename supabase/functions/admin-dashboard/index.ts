@@ -126,6 +126,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "get_function_code") {
+      const fnName = table_name;
+      if (!fnName) {
+        return new Response(JSON.stringify({ error: "function name required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const basePath = `/home/deno/functions/${fnName}`;
+        let code = "";
+        try {
+          code = await Deno.readTextFile(`${basePath}/index.ts`);
+        } catch {
+          try {
+            code = await Deno.readTextFile(`${basePath}/index.js`);
+          } catch {
+            code = "// Código não encontrado para esta função";
+          }
+        }
+        return new Response(JSON.stringify({ code }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

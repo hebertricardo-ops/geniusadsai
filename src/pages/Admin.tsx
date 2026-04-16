@@ -49,6 +49,12 @@ const SECRETS_LIST = [
   "SUPABASE_SERVICE_ROLE_KEY", "WEBHOOK_SECRET", "LOVABLE_API_KEY", "OPENAI_API_KEY"
 ];
 
+const EDGE_FUNCTIONS = [
+  "admin-dashboard", "check-user-exists", "create-checkout", "create-user-webhook",
+  "delete-user-refund", "generate-carousel", "generate-copy", "generate-creative",
+  "handle-payment-success", "process-email-queue", "update-user-credit"
+];
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -60,6 +66,7 @@ export default function Admin() {
   const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
   const [showKeys, setShowKeys] = useState(false);
   const [storageFiles, setStorageFiles] = useState<Record<string, any[]>>({});
+  const [loadingFnCode, setLoadingFnCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchMetadata();
@@ -180,6 +187,26 @@ export default function Admin() {
       setStorageFiles(prev => ({ ...prev, [bucketName]: data?.files || [] }));
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const copyFunctionCode = async (fnName: string) => {
+    setLoadingFnCode(fnName);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-dashboard", {
+        body: { action: "get_function_code", table_name: fnName },
+      });
+      if (error) throw error;
+      if (data?.code) {
+        navigator.clipboard.writeText(data.code);
+        toast({ title: "Código copiado!", description: `Código de ${fnName} copiado para a área de transferência.` });
+      } else {
+        toast({ title: "Erro", description: data?.error || "Código não encontrado", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingFnCode(null);
     }
   };
 
@@ -327,6 +354,48 @@ export default function Admin() {
                             onClick={() => copyToClipboard(`SELECT * FROM public.${fn.name}(${fn.args ? "..." : ""});`, fn.name)}
                           >
                             <Copy className="h-3 w-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Edge Functions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {EDGE_FUNCTIONS.map((fn) => (
+                      <TableRow key={fn}>
+                        <TableCell className="font-mono text-sm font-medium">{fn}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          /functions/v1/{fn}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={loadingFnCode === fn}
+                            onClick={() => copyFunctionCode(fn)}
+                          >
+                            {loadingFnCode === fn ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            <span className="ml-1 text-xs">Copiar código</span>
                           </Button>
                         </TableCell>
                       </TableRow>
