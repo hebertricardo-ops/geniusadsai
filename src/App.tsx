@@ -19,6 +19,7 @@ import RegenerateCreative from "./pages/RegenerateCreative";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import ChangePassword from "./pages/ChangePassword";
 import AddCredits from "./pages/AddCredits";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
