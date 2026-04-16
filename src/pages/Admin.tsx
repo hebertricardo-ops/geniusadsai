@@ -181,6 +181,7 @@ export default function Admin() {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  if (user.email !== ADMIN_EMAIL) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-background">
