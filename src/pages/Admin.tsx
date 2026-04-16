@@ -190,7 +190,26 @@ export default function Admin() {
     }
   };
 
-  if (authLoading) {
+  const copyFunctionCode = async (fnName: string) => {
+    setLoadingFnCode(fnName);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-dashboard", {
+        body: { action: "get_function_code", table_name: fnName },
+      });
+      if (error) throw error;
+      if (data?.code) {
+        navigator.clipboard.writeText(data.code);
+        toast({ title: "Código copiado!", description: `Código de ${fnName} copiado para a área de transferência.` });
+      } else {
+        toast({ title: "Erro", description: data?.error || "Código não encontrado", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingFnCode(null);
+    }
+  };
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Carregando...</div>
