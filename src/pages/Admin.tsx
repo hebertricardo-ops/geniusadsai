@@ -145,7 +145,18 @@ export default function Admin() {
       if (type === "integer") type = "integer";
       let def = `  ${col.name} ${type}`;
       if (col.name === "id") def += " PRIMARY KEY";
-      if (col.default) def += ` DEFAULT ${col.default}`;
+      if (col.default) {
+        const d = String(col.default);
+        // Wrap non-numeric, non-function defaults in quotes
+        const isFunc = d.includes("(") || d === "now()" || d === "gen_random_uuid()";
+        const isNumeric = /^-?\d+(\.\d+)?$/.test(d);
+        const isAlreadyQuoted = d.startsWith("'");
+        if (!isFunc && !isNumeric && !isAlreadyQuoted) {
+          def += ` DEFAULT '${d}'`;
+        } else {
+          def += ` DEFAULT ${d}`;
+        }
+      }
       return def;
     }).join(",\n");
 
