@@ -362,6 +362,48 @@ export default function Admin() {
                 </Table>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Edge Functions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {EDGE_FUNCTIONS.map((fn) => (
+                      <TableRow key={fn}>
+                        <TableCell className="font-mono text-sm font-medium">{fn}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          /functions/v1/{fn}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={loadingFnCode === fn}
+                            onClick={() => copyFunctionCode(fn)}
+                          >
+                            {loadingFnCode === fn ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            <span className="ml-1 text-xs">Copiar código</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* STORAGE TAB */}
