@@ -134,18 +134,65 @@ Deno.serve(async (req) => {
         });
       }
       try {
-        const basePath = `/home/deno/functions/${fnName}`;
+        const possiblePaths = [
+          `/home/deno/functions/${fnName}/index.ts`,
+          `/home/deno/functions/${fnName}/index.js`,
+          `/var/task/functions/${fnName}/index.ts`,
+          `/tmp/functions/${fnName}/index.ts`,
+          `./functions/${fnName}/index.ts`,
+          `./${fnName}/index.ts`,
+          `../${fnName}/index.ts`,
+          `/src/functions/${fnName}/index.ts`,
+        ];
+        
         let code = "";
+        let foundPath = "";
+        
+        // Try to discover the actual path
+        let debugInfo = "";
         try {
-          code = await Deno.readTextFile(`${basePath}/index.ts`);
-        } catch {
+          const cwd = Deno.cwd();
+          debugInfo += `CWD: ${cwd}\n`;
           try {
-            code = await Deno.readTextFile(`${basePath}/index.js`);
-          } catch {
-            code = "// Código não encontrado para esta função";
+            for await (const entry of Deno.readDir(cwd)) {
+              debugInfo += `  ${entry.name} (${entry.isDirectory ? 'dir' : 'file'})\n`;
+            }
+          } catch {}
+          try {
+            for await (const entry of Deno.readDir("/home/deno")) {
+              debugInfo += `  /home/deno/${entry.name} (${entry.isDirectory ? 'dir' : 'file'})\n`;
+            }
+          } catch (e) {
+            debugInfo += `  /home/deno: ${e.message}\n`;
           }
+        } catch {}
+        
+        for (const p of possiblePaths) {
+          try {
+            code = await Deno.readTextFile(p);
+            foundPath = p;
+            break;
+          } catch { /* try next */ }
         }
-        return new Response(JSON.stringify({ code }), {
+        
+        if (!code) {
+          // Also try reading relative to import.meta.url
+          try {
+            const baseUrl = new URL(".", import.meta.url);
+            const siblingUrl = new URL(`../${fnName}/index.ts`, baseUrl);
+            const resp = await fetch(siblingUrl);
+            if (resp.ok) {
+              code = await resp.text();
+              foundPath = siblingUrl.toString();
+            }
+          } catch {}
+        }
+        
+        if (!code) {
+          code = `// Código não encontrado.\n// Debug:\n${debugInfo}`;
+        }
+        
+        return new Response(JSON.stringify({ code, path: foundPath }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
